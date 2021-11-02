@@ -1,0 +1,70 @@
+[tool.poetry]
+name = "url-to-video-bot"
+version = "0.1.0"
+authors = ["Vítor Vasconcellos <vasconcellos.dev@gmail.com>"]
+description = "A simple telegram bot that resolves video urls using yt-dlp"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+"antenna.security" = { git = "https://gitlab.com/VitorVasconcellos/antenna.security.git", branch = "master" }
+cryptography = "^35.0.0"
+
+[tool.poetry.dev-dependencies]
+mypy = "^0.910"
+black = "^21.10b0"
+isort = "^5.9.3"
+
+[tool.isort]
+quiet = true
+atomic = true
+profile = "black"
+src_paths = ["url_to_video_bot", "tests"]
+line_length = 99
+length_sort = true
+virtual_env = ".venv"
+combine_star = true
+order_by_type = true
+dedup_headings = true
+skip_gitignore = true
+balanced_wrapping = true
+combine_as_imports = true
+import_heading_stdlib = "Internal"
+remove_redundant_aliases = true
+import_heading_thirdparty = "External"
+import_heading_firstparty = "External"
+import_heading_localfolder = "Project"
+
+[tool.black]
+color = true
+line-length = 99
+target-version = ['py38']
+
+[tool.mypy]
+pretty = true
+strict = true
+color_output = true
+error_summary = true
+ignore_errors = false
+python_version = "3.8"
+follow_imports = "normal"
+strict_optional = true
+show_error_codes = true
+warn_unreachable = true
+python_executable = "./.venv/bin/python"
+show_error_context = true
+show_column_numbers = true
+warn_unused_configs = true
+warn_incomplete_stub = true
+disallow_any_unimported = true
+
+[tool.pyright]
+venv = ".venv"
+include = ["url_to_video_bot", "tests"]
+venvPath = "."
+pythonVersion = "3.8"
+pythonPlatform = "All"
+typeCheckingMode = "strict"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
