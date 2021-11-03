@@ -1,0 +1,4 @@
+TELEGRAM_API = "https://api.telegram.org"
+TELEGRAM_VALID_PORTS = (443, 80, 88, 8443)
+
+__all__ = ("TELEGRAM_API", "TELEGRAM_VALID_PORTS")

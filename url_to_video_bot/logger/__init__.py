@@ -5,7 +5,7 @@ from logging import INFO, WARNING, Logger, StreamHandler
 from logging.handlers import RotatingFileHandler
 
 # Project
-from .formatter import Formatter as CustomFormatter
+from ._formatter import Formatter
 
 _DEFAULT_LOG_PATH = "./logs"
 _MAX_LOG_FILE_SIZE = (
@@ -16,7 +16,7 @@ _MAX_LOG_FILE_COUNT = 10
 # Setup root logger basic config
 Logger.root.setLevel(INFO if __debug__ else WARNING)
 _stderr_stream_handler = StreamHandler()
-_stderr_stream_handler.setFormatter(CustomFormatter())
+_stderr_stream_handler.setFormatter(Formatter())
 Logger.root.addHandler(_stderr_stream_handler)
 
 
@@ -60,7 +60,7 @@ def get_logger(
             maxBytes=file_size_limit,
             backupCount=file_count_limit,
         )
-        rfh.setFormatter(CustomFormatter(colors=None))
+        rfh.setFormatter(Formatter(colors=None))
 
         log.addHandler(rfh)
 
