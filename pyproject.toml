@@ -1,7 +1,9 @@
 [tool.poetry]
 name = "url-to-video-bot"
+readme = "README.md"
 version = "0.2.0"
 authors = ["Vítor Vasconcellos <vasconcellos.dev@gmail.com>"]
+license = "GPL-2.0-or-later"
 description = "A simple telegram bot that resolves video urls using yt-dlp"
 
 [tool.poetry.dependencies]

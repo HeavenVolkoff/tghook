@@ -1,11 +1,21 @@
+"""
+File: ./bot_server.py
+Author: Vítor Vasconcellos (vasconcellos.dev@gmail.com)
+Project: url_to_video_bot
+
+Copyright (C) 2021 Vítor Vasconcellos
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+"""
+
 # Internal
 import signal
-from typing import Type, Union, Literal, Optional, overload
+from typing import Any, Type, Union, Literal, Optional, overload
 from ipaddress import IPv4Address
 from threading import Thread
 from contextlib import ExitStack
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-from socketserver import BaseServer
 
 # Project
 from .logger import get_logger
@@ -23,15 +33,6 @@ logger = get_logger(__name__)
 
 class BotRequestHandler(BaseHTTPRequestHandler):
     pass
-
-
-def shutdown_server_on_error(
-    exc: Union[None, BaseException, Type[BaseException]], server: BaseServer
-) -> Literal[False]:
-    if exc:
-        server.shutdown()
-
-    return False
 
 
 @overload
@@ -79,10 +80,19 @@ def start_server(
         external_hostname: [description]. Defaults to None.
     """
 
+    logger.info("Starting Telegram bot server...")
+
     try:
         bot = get_me(bot_token)
     except Exception as exc:
         raise RuntimeError("Failed to authenticate bot with Telegram API") from exc
+
+    logger.info("Sucesscefully connectect to Telegram API")
+
+    logger.info(f"Hello, I am {bot.first_name}, id: {bot.id}")
+
+    if not bot.is_bot:
+        logger.warn(f"It seems that I have gained sentience")
 
     # If no external hostname was passed, attempt to retriece host external ip using ipify API
     if external_host is None:
@@ -90,6 +100,8 @@ def start_server(
 
     if external_port is None:
         external_port = port
+
+    logger.info(f"Bot server will be exposed at {external_host}:{external_port}")
 
     # SSL/TLS self-signed certificate
     if alternative_name is not None:
@@ -118,21 +130,45 @@ def start_server(
         server_thread = Thread(target=server.serve_forever)
         server_thread.start()
 
+        logger.info(f"Bot server started")
+
         # Setup signal handling for graciously finish program
         signal.signal(signal.SIGINT, lambda _, __: server.shutdown())
         signal.signal(signal.SIGTERM, lambda _, __: server.shutdown())
 
-        # Setup context exit handler that shutdown the server if any error hapens for here ownward
-        stack.push(
-            lambda exc_type, exc, __: shutdown_server_on_error(exc if exc else exc_type, server)  # type: ignore[reportUnknownLambdaType]
-        )
+        @stack.push
+        def shutdown_server_on_error(  # type: ignore[reportUnusedFunction]
+            exc_type: Optional[Type[BaseException]], exc: Optional[BaseException], _: Any
+        ) -> Literal[False]:
+            """Context exit handler that shutdown the server if any error hapens for here ownward"""
+            if exc is None and exc_type is not None:
+                exc = exc_type()
 
-        # Setup a context exit callback that simply wait for server to close.
-        # This should block the main thread until the server shutdown.
-        stack.callback(server_thread.join)
+            if exc:
+                logger.error(f"An error occured, shuthing down bot server...", exc_info=exc)
+                server.shutdown()
+
+            return False
+
+        @stack.callback
+        def join_with_server_thread() -> None:  # type: ignore[reportUnusedFunction]
+            """Context exit callback that simply wait for server to close.
+            This should block the main thread until the server shutdown.
+            """
+            server_thread.join()
+            logger.warn("Bot server shutted down")
 
         # Register bot server with telegram API
         set_webhook((external_host, external_port), bot_token, certificate=cert)
 
-        # Setup a context exit callback that unregister this bot server with the telegram API, after it has closed.
-        stack.callback(delete_webhook, bot_token)
+        logger.info(f"Telegram API webhook was sucesscefully configures")
+
+        @stack.callback
+        def unregister_webhook() -> None:  # type: ignore[reportUnusedFunction]
+            """Context exit callback that unregister this bot server with the telegram API, after it has closed"""
+            try:
+                delete_webhook(bot_token)
+            except Exception as exc:
+                logger.error("Failed to unregister webhook", exc_info=exc)
+            else:
+                logger.error("Successfully unregistertered webhook")
