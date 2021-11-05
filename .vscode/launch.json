@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: tghook",
+      "type": "python",
+      "request": "launch",
+      "justMyCode": false,
+      "stopOnEntry": false,
+      "program": "tghook",
+      "args": ["-i", "url_to_video", "BOT_TOKEN"],
+      "linux": {
+        "python": "${workspaceFolder}/.venv/bin/python"
+      },
+      "windows": {
+        "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+      },
+      "console": "integratedTerminal"
+    }
+  ]
+}

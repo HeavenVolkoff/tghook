@@ -21,7 +21,7 @@ def _stderr_supports_color(
 
     if os.name == "nt":
         try:
-            # Attempt to enable ANSII colors on windows
+            # Attempt to enable ANSI colors on windows
             # Internal
             from ctypes import windll  # type: ignore
 
@@ -78,7 +78,7 @@ class Formatter(BaseFormatter):
             "From %(module)s.%(funcName)s at %(filename)s:%(lineno)d"
         )
         + "%(end_color)s"
-        "\n%(message).300s"
+        "\n%(message)s"
     )
     DEFAULT_COLORS = {
         DEBUG: 4,  # Blue
@@ -87,7 +87,7 @@ class Formatter(BaseFormatter):
         ERROR: 1,  # Red
         CRITICAL: 5,  # Magenta
     }
-    DEFAULT_DATE_FORMAT = "%y%m%d %H:%M:%S"
+    DEFAULT_DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
 
     def __init__(
         self,

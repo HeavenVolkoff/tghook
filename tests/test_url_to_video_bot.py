@@ -1,5 +1,5 @@
 # External
-from url_to_video_bot import __version__
+from tghook import __version__
 
 
 def test_version() -> None:

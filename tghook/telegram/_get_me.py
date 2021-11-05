@@ -1,25 +1,34 @@
 """
-File: ./__init__.py
+File: ./tghook/telegram/_get_me.py
 Author: Vítor Vasconcellos (vasconcellos.dev@gmail.com)
-Project: url_to_video_bot
+Project: tghook
 
-Copyright (C) 2021 Vítor Vasconcellos
+Copyright © 2021-2021 Vítor Vasconcellos
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 
-# Internal
-from importlib.metadata import version
+# Project
+from .types import User
+from ._request import request_telegram
 
-try:
-    __version__: str = version(__name__)
-except Exception:  # pragma: no cover
-    # Internal
-    import traceback
-    from warnings import warn
 
-    warn(f"Failed to set version due to:\n{traceback.format_exc()}", ImportWarning)
-    __version__ = "0.0a0"
+def get_me(bot_token: str) -> User:
+    """https://core.telegram.org/bots/api#deletewebhook
 
-__all__ = ("__version__",)
+    Args:
+        bot_token: Telegram bot token, for authentication with the Telegram API
+
+    Raises:
+        RuntimeError: Failure to communicate with Telegram API
+
+    """
+    response = request_telegram(bot_token, "getMe")
+    if not isinstance(response, dict):
+        raise RuntimeError("Telegram answered get_me with an invalid response")
+
+    return User(**response)
+
+
+__all__ = ("get_me",)

@@ -1,16 +1,24 @@
 [tool.poetry]
-name = "url-to-video-bot"
+name = "tghook"
 readme = "README.md"
 version = "0.2.0"
 authors = ["Vítor Vasconcellos <vasconcellos.dev@gmail.com>"]
 license = "GPL-2.0-or-later"
 description = "A simple telegram bot that resolves video urls using yt-dlp"
 
+[tool.poetry.extras]
+cmd = ["typed-argument-parser", "yt-dlp"]
+
+[tool.poetry.scripts]
+tghook = 'tghook.__main__:main'
+
 [tool.poetry.dependencies]
 python = "^3.9"
 "antenna.security" = { git = "https://gitlab.com/VitorVasconcellos/antenna.security.git", branch = "master" }
 cryptography = "^35.0.0"
 pydantic = "^1.8.2"
+typed-argument-parser = { version = "^1.7.1", optional = true }
+yt-dlp = { version = "^2021.10.22", optional = true }
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.910"
@@ -21,19 +29,15 @@ poethepoet = "^0.10.0"
 
 [tool.poe.tasks]
 check = { shell = "mypy .; npx pyright" }
-format = { shell = "isort . && black ." }
-fix-tg-types = { shell = "sed -i 's/\\(\\\\\\)\\{0,1\\}\\\\_/_/g' url_to_video_bot/telegram/types.py" }
+format = { shell = "isort . && black -q . && npx prettier --write --loglevel=warn **/*.{md,json}" }
 grab-tg-types = """datamodel-codegen
   --url https://ark0f.github.io/tg-bot-api/openapi.yml
-  --output url_to_video_bot/telegram/types.py
+  --output tghook/telegram/types.py
   --validation
   --reuse-model
-  --strict-types str
-  --strict-types int
-  --strict-types bool
-  --strict-types float
-  --strict-types bytes
+  --strict-types str int bool float bytes
   --use-annotated
+  --openapi-scopes schemas paths
   --strict-nullable
   --input-file-type openapi
   --snake-case-field
@@ -44,12 +48,32 @@ grab-tg-types = """datamodel-codegen
   --enable-faux-immutability
   --use-generic-container-types"""
 update-tg-types = ["grab-tg-types", "fix-tg-types", "format"]
+update-editor-config = "curl -LO 'https://raw.githubusercontent.com/jokeyrhyme/standard-editorconfig/main/.editorconfig'"
+
+[tool.poe.tasks.fix-tg-types]
+shell = """sed -i 's/\\(\\\\\\)\\{0,1\\}\\\\_/_/g' tghook/telegram/types.py &&
+  cat << EOF >&2
+Currently some manual work is necessary:
+- Remove all *PostResponse classes, as they are not used
+- Remove all classes matching regex PostRequest[0-9]+
+- Find all *PostRequest classes and export an Union type of them called RequestTypes
+- Rename PostRequest sufix from class names
+- Resolve mypy and pyright issues
+
+VSCode Tip for removing classes:
+    - Use local search to find relevant class names
+    - ALT + ENTER
+    - CTRL + SHIFT + [
+    - HOME
+    - SHIFT + ARROW_DOWN
+    - DEL
+EOF"""
 
 [tool.isort]
 quiet = true
 atomic = true
 profile = "black"
-src_paths = ["url_to_video_bot", "tests"]
+src_paths = ["tghook", "tests"]
 line_length = 99
 length_sort = true
 virtual_env = ".venv"
@@ -85,18 +109,20 @@ python_executable = "./.venv/bin/python"
 show_error_context = true
 show_column_numbers = true
 warn_unused_configs = true
-warn_unused_ignores = false # for compatibility with pyright
+warn_unused_ignores = false              # for compatibility with pyright
 warn_incomplete_stub = true
 disallow_any_unimported = true
 
 [tool.pyright]
 venv = ".venv"
-include = ["url_to_video_bot", "tests"]
+include = ["tghook", "tests"]
 venvPath = "."
 pythonVersion = "3.9"
 pythonPlatform = "All"
 typeCheckingMode = "strict"
-reportImportCycles = "warning"
+reportImportCycles = "none"
+reportUnknownMemberType = "none"
+reportUnknownVariableType = "none"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -1,34 +1,24 @@
 """
-File: ./_set_webhook.py
+File: ./tghook/telegram/_set_webhook.py
 Author: Vítor Vasconcellos (vasconcellos.dev@gmail.com)
-Project: telegram
+Project: tghook
 
-Copyright (C) 2021 Vítor Vasconcellos
+Copyright © 2021-2021 Vítor Vasconcellos
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 
 # Internal
-import ssl
-import json
-from typing import Dict, List, Tuple, Union, Optional
-from pathlib import PurePath
+from typing import List, Tuple, Union, Optional
 from ipaddress import IPv4Address, AddressValueError
-from urllib.error import URLError, HTTPError
-from urllib.parse import SplitResult, urljoin, urlsplit, urlunsplit
-from urllib.request import Request, urlopen
+from urllib.parse import SplitResult, quote, urljoin, urlsplit, urlunsplit
+from email.message import Message
 
 # Project
-from . import _constants
-from ..http.headers import add_header
-from ..http.multipart_form_data import (
-    MIME_JSON,
-    MIME_UTF_TEXT,
-    FormPart,
-    MIMEType,
-    encode_multipart_formdata,
-)
+from ._request import request_telegram
+from ._constants import TELEGRAM_VALID_PORTS
+from .._multipart_form_data import MIME_UTF_TEXT, FormPart, MIMEType, encode_multipart_formdata
 
 
 def _parse_webhook(webhook: Union[str, Tuple[Union[str, IPv4Address], int]]) -> SplitResult:
@@ -39,7 +29,7 @@ def _parse_webhook(webhook: Union[str, Tuple[Union[str, IPv4Address], int]]) -> 
         if isinstance(host, IPv4Address):
             host = host.compressed
 
-        return urlsplit(f"{host}:{port}", scheme="https")
+        return urlsplit(f"//{host}:{port}", scheme="https")
 
 
 def set_webhook(
@@ -59,7 +49,7 @@ def set_webhook(
         ip: Tell Telegram API to bypass webhook url resolution and use this ip instead
         certificate: Self-signed public certificate content tobe used by the Telegram API during communication
         max_connections: Tell Telegram API the maximum number of concurrent connections the webhook server can handle
-        allowed_updates: Tell Telegram API wheter to delete previous undelivered updates or not.
+        allowed_updates: Tell Telegram API wether to delete previous undelivered updates or not.
 
     Raises:
         ValueError: Incorrect argument value
@@ -69,9 +59,9 @@ def set_webhook(
     url = _parse_webhook(webhook)
     if url.scheme != "https":
         raise ValueError(f"Webhook URL scheme MUST be https, not: {url.scheme}")
-    if url.port and url.port not in _constants.TELEGRAM_VALID_PORTS:
+    if url.port and url.port not in TELEGRAM_VALID_PORTS:
         raise ValueError(
-            f"Webhook URL port MUST be one of {_constants.TELEGRAM_VALID_PORTS}, not: {url.port}"
+            f"Webhook URL port MUST be one of {TELEGRAM_VALID_PORTS}, not: {url.port}"
         )
 
     if max_connections < 1 or max_connections > 100:
@@ -80,19 +70,19 @@ def set_webhook(
     form_data = [
         FormPart(
             name="url",
-            data=urlunsplit(url),
+            data=urljoin(urlunsplit(url), quote(bot_token)),
             type=MIME_UTF_TEXT,
         ),
         FormPart(
             name="max_connections",
-            data=json.dumps(max_connections),
-            type=MIME_JSON,
+            data=str(max_connections),
+            type=MIME_UTF_TEXT,
         ),
     ]
     if ip_address is not None:
         try:
             IPv4Address(url.hostname)
-            raise ValueError("ip SHOULD be None when webhook is already an ip addresss")
+            raise ValueError("ip SHOULD be None when webhook is already an ip address")
         except AddressValueError:
             pass
 
@@ -115,49 +105,28 @@ def set_webhook(
         form_data.append(
             FormPart(
                 name="allowed_updates",
-                data=json.dumps(allowed_updates),
-                type=MIME_JSON,
+                data=str(allowed_updates),
+                type=MIME_UTF_TEXT,
             )
         )
 
     multipart_formdata = encode_multipart_formdata(form_data)
 
-    headers: Dict[str, str] = {}
-    add_header(
-        headers, "Content-Type", "multipart/form-data", boundary=multipart_formdata.get_boundary()
+    # WARNING: MUST execute multipart_formdata.as_bytes BEFORE multipart_formdata.get_boundary
+    #          because the message boundary is generated when getting data. So, if the order is
+    #          reversed get_boundary WILL return
+    data = multipart_formdata.as_bytes()
+    response = request_telegram(
+        bot_token,
+        "setWebhook",
+        {"Content-Type": f"multipart/form-data; boundary={multipart_formdata.get_boundary()}"},
+        data,
     )
 
-    try:
-        with urlopen(
-            Request(
-                url=urljoin(
-                    _constants.TELEGRAM_API, (PurePath(bot_token) / "setWebhook").as_posix()
-                ),
-                data=multipart_formdata.as_bytes(),
-                method="POST",
-                headers=headers,
-            ),
-            context=ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH),
-        ) as req:
-            try:
-                res = json.loads(req.read().decode("utf-8"))
-            except Exception as exc:
-                raise RuntimeError("Failed to parse Telegram response for setWebhook") from exc
-
-            if not res.get("ok", False):
-                raise RuntimeError(
-                    f"Telegram answered setWebhook with an error: {res.get('error_code', 'unknown')}\n{res.get('description', 'unknown')}"
-                )
-
-            if not res.get("result", False):
-                raise RuntimeError(
-                    f"setWebhook failed. Telegram probably wasn't able to access our server"
-                )
-
-    except HTTPError as exc:
-        raise RuntimeError(f"Telegram couldn't fulfill the request: {exc.code}") from exc
-    except URLError as exc:
-        raise RuntimeError(f"Failed to reach Telegram due to: {exc.reason}") from exc
+    if not response:
+        raise RuntimeError(
+            f"setWebhook failed. Telegram probably wasn't able to access our server"
+        )
 
 
 __all__ = ("set_webhook",)
