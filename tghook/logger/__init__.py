@@ -12,7 +12,7 @@ You should have received a copy of the GNU General Public License along with thi
 # Internal
 from os import path, makedirs
 from typing import Union, Optional
-from logging import INFO, WARNING, Logger, StreamHandler
+from logging import INFO, WARNING, Logger, StreamHandler, captureWarnings
 from logging.handlers import RotatingFileHandler
 
 # Project
@@ -29,6 +29,9 @@ Logger.root.setLevel(INFO if __debug__ else WARNING)
 _stderr_stream_handler = StreamHandler()
 _stderr_stream_handler.setFormatter(Formatter())
 Logger.root.addHandler(_stderr_stream_handler)
+
+# Configure warning to be show using the logging infraestructure
+captureWarnings(True)
 
 
 def set_level(level: Union[str, int]) -> None:

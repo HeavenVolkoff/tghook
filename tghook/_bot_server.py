@@ -1,5 +1,5 @@
-"""
-File: ./tghook/bot_server.py
+'''
+File: ./tghook/_bot_server.py
 Author: Vítor Vasconcellos (vasconcellos.dev@gmail.com)
 Project: tghook
 
@@ -7,18 +7,19 @@ Copyright © 2021-2021 Vítor Vasconcellos
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-"""
+'''
 
 # Internal
 import json
 import signal
-from typing import Any, Type, Tuple, Union, Literal, Callable, Optional, overload
+from typing import Any, Type, Tuple, Union, Literal, Callable, Optional
 from hashlib import md5
 from ipaddress import IPv4Address
 from threading import Thread
 from contextlib import ExitStack
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from socketserver import BaseServer, BaseRequestHandler
+from urllib.parse import unquote
 
 # Project
 from .logger import get_logger
@@ -29,6 +30,8 @@ from .telegram.types import Update, RequestTypes
 from ._multipart_form_data import MIME_JSON
 
 logger = get_logger(__name__)
+
+EXTERNAL_HOST_TYPE = Union[str, None, IPv4Address, Tuple[str, Optional[IPv4Address]]]
 
 
 class BotRequestHandler(BaseHTTPRequestHandler):
@@ -70,6 +73,10 @@ class BotRequestHandler(BaseHTTPRequestHandler):
 
         super().__init__(request, client_address, server)
 
+    @property
+    def proper_path(self) -> str:
+        return unquote(self.path)
+
     def log_error(self, format: str, *args: Any) -> None:
         logger.error(f"Request from: %s - {format}", self.address_string(), *args)
 
@@ -77,7 +84,7 @@ class BotRequestHandler(BaseHTTPRequestHandler):
         logger.debug(f"Request from: %s - {format}", self.address_string(), *args)
 
     def do_HEAD(self) -> bool:
-        if self.path != "/":
+        if self.proper_path != "/":
             self.send_error(404)
             return False
 
@@ -96,7 +103,7 @@ class BotRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(self._greetings)
 
     def do_POST(self) -> None:
-        if self.path != f"/{self._token}":
+        if self.proper_path != f"/{self._token}":
             self.send_error(404, explain="Request is probably NOT from Telegram API")
             return
 
@@ -164,43 +171,14 @@ class HTTPServer(ThreadingHTTPServer):
         self.RequestHandlerClass(request, client_address, self, **self._request_handler_kwargs)
 
 
-@overload
 def start_server(
     bot_impl: Callable[[Update], Optional[RequestTypes]],
     bot_token: str,
     *,
     host: str = "0.0.0.0",
     port: int = 443,
-    external_host: str,
+    external_host: EXTERNAL_HOST_TYPE = None,
     external_port: Optional[int] = None,
-    alternative_name: None = None,
-) -> None:
-    ...
-
-
-@overload
-def start_server(
-    bot_impl: Callable[[Update], Optional[RequestTypes]],
-    bot_token: str,
-    *,
-    host: str = "0.0.0.0",
-    port: int = 443,
-    external_host: Optional[IPv4Address] = None,
-    external_port: Optional[int] = None,
-    alternative_name: Optional[str] = None,
-) -> None:
-    ...
-
-
-def start_server(
-    bot_impl: Callable[[Update], Optional[RequestTypes]],
-    bot_token: str,
-    *,
-    host: str = "0.0.0.0",
-    port: int = 443,
-    external_host: Union[str, IPv4Address, None] = None,
-    external_port: Optional[int] = None,
-    alternative_name: Optional[str] = None,
 ) -> None:
     """Bot server entrypoint
 
@@ -210,22 +188,24 @@ def start_server(
         port: Port used for binding this server socket
         external_host: External hostname that will be resolved to the host where the bot server is running
         external_port: External port where the bot server is exposed
-        alternative_name: Alternative name to be used as server hostname, when external_host is an IPv4 address.
 
     """
     logger.info("Starting Telegram bot server...")
 
-    try:
+    try:  # Retrieve bot information from Telegram API
         bot = get_me(bot_token)
     except Exception as exc:
         raise RuntimeError("Failed to authenticate bot with Telegram API") from exc
 
-    logger.info("Successfully connectect to Telegram API")
-
     logger.info(f"Hello, I am %s (id: %d)", bot.first_name, bot.id)
 
-    if not bot.is_bot:
+    if not bot.is_bot:  # Hun?!
         logger.warn(f"It seems that I have gained sentience")
+
+    # Retrieve alternative_name argument
+    alternative_name = None
+    if isinstance(external_host, tuple):
+        alternative_name, external_host = external_host
 
     # If no external hostname was passed, attempt to retrieve host external ip using ipify API
     if external_host is None:
@@ -234,24 +214,19 @@ def start_server(
     if external_port is None:
         external_port = port
 
-    logger.info(f"Bot server will be exposed at %s:%d", external_host, external_port)
-
     # SSL/TLS self-signed certificate
-    if alternative_name is not None:
-        if isinstance(external_host, str):
+    if isinstance(external_host, IPv4Address):
+        if alternative_name is None:
+            alternative_name = f"{bot.first_name.lower()}.bot"
+
+        cert, key = generate_adhoc_ssl_pair(f"Telegram Bot: {bot.first_name}", alternative_name)
+    else:
+        if alternative_name is not None:
             raise ValueError("Alternative Name can only be used when External Host is an IP")
 
-        cert, key = generate_adhoc_ssl_pair(
-            f"Telegram Bot: {bot.first_name}", alternative_name, ip_address=external_host
-        )
-    elif isinstance(external_host, str):
         cert, key = generate_adhoc_ssl_pair(f"Telegram Bot: {bot.first_name}", external_host)
-    else:
-        cert, key = generate_adhoc_ssl_pair(
-            f"Telegram Bot: {bot.first_name}", ip_address=external_host
-        )
 
-    # SSL/TLS context for HTTPS
+    # SSL/TLS context for HTTPS server
     ssl_context = create_server_ssl_context(cert, key)
 
     with ExitStack() as stack:
@@ -264,16 +239,16 @@ def start_server(
                 bot_impl=bot_impl,
             )
         )
-        # Enable SSL/TLS in server for HTTPS support
+        # Wrap TCP socket with SSL/TLS to enable HTTPS support in the server
         server.socket = ssl_context.wrap_socket(server.socket, server_side=True)
 
         # Open server in a new thread
         server_thread = Thread(target=server.serve_forever)
         server_thread.start()
 
-        logger.info(f"Bot server started")
+        logger.info(f"Bot server started. Address: %s:%d", external_host, external_port)
 
-        # Setup signal handling for graciously finish program
+        # Setup signal handling for gracious shutdown
         signal.signal(signal.SIGINT, lambda _, __: server.shutdown())
         signal.signal(signal.SIGTERM, lambda _, __: server.shutdown())
 
@@ -304,6 +279,10 @@ def start_server(
                 certificate=cert,
             )
         else:
+            if isinstance(external_host, IPv4Address):
+                raise ValueError(
+                    "External Host is an IP. This requires an alternative host name, for correct certificate validation"
+                )
             set_webhook((external_host, external_port), bot_token, certificate=cert)
 
         logger.info(f"Telegram API webhook was successfully registered")
@@ -325,4 +304,4 @@ def start_server(
         logger.warn("Bot server shutted down")
 
 
-__all__ = ("start_server",)
+__all__ = ("start_server", "EXTERNAL_HOST_TYPE")

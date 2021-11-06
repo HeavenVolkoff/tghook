@@ -35,7 +35,8 @@ MIME_UTF_TEXT = MIMEType("text", "plain", {"charset": "utf8"})
 class FormPart(NamedTuple):
     name: str
     data: Union[str, bytes]
-    type: MIMEType
+    type: Optional[MIMEType] = None
+    filename: Optional[str] = None
 
 
 def encode_multipart_formdata(parts: Sequence[FormPart]) -> MIMEMultipart:
@@ -51,18 +52,34 @@ def encode_multipart_formdata(parts: Sequence[FormPart]) -> MIMEMultipart:
     form_data = MIMEMultipart("form-data", policy=HTTP)
 
     for part in parts:
+        mime_type = part.type if part.type else MIME_UTF_TEXT
         data = MIMENonMultipart(
-            part.type.main,
-            part.type.sub,
+            mime_type.main,
+            mime_type.sub,
             policy=HTTP,
-            **(part.type.params if part.type.params else {}),
+            **(mime_type.params if mime_type.params else {}),
         )
+
+        # This header is only for the email spec
         del data["MIME-Version"]
-        _type = data["Content-Type"]
-        data.add_header("Content-Disposition", f'form-data; name="{part.name}"')
+
+        # Backup Content-Type to restore it later, if there was one from the beginning
+        _type = data["Content-Type"] if part.type else None
+        # Remove Content-Type before adding Content-Disposition
         del data["Content-Type"]
-        data.add_header("Content-Type", _type)
+
+        # multipart/form-data requires all partes to have a Content-Disposition header, describing the field
+        params = {"name": part.name}
+        if part.filename:
+            params["filename"] = part.filename
+        data.add_header("Content-Disposition", f"form-data", **params)
+
+        if _type:
+            # Restore Content-Type after Content-Disposition, this is to emulate common browser behavior
+            data.add_header("Content-Type", _type)
+
         data.set_payload(part.data)
+
         form_data.attach(data)
 
     return form_data

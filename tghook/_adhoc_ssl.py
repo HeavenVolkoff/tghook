@@ -11,30 +11,26 @@ You should have received a copy of the GNU General Public License along with thi
 
 # Internal
 from ssl import SSLContext
-from typing import List, Tuple, Union, Optional
+from typing import Tuple
 from datetime import datetime, timezone, timedelta
 from tempfile import NamedTemporaryFile
-from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from contextlib import ExitStack
 
 # External
 import antenna.security
 from cryptography import x509
-from cryptography.x509 import GeneralName
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-MaybeIP = Optional[Union[IPv4Address, IPv6Address, IPv4Network, IPv6Network]]
+# Project
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 
-def generate_adhoc_ssl_pair(
-    organization_name: Optional[str] = None,
-    common_name: Optional[str] = None,
-    *,
-    ip_address: MaybeIP = None,
-) -> Tuple[bytes, bytes]:
+def generate_adhoc_ssl_pair(organization_name: str, common_name: str) -> Tuple[bytes, bytes]:
     """Generate an adhoc ssl certificate and key
 
     Modified version of generate_adhoc_ssl_pair from Werkzeug (Copyright 2007 Pallets)
@@ -56,10 +52,6 @@ def generate_adhoc_ssl_pair(
         public_exponent=65537, key_size=2048, backend=default_backend()
     )
 
-    # pretty damn sure that this is not actually accepted by anyone
-    if common_name is None:
-        common_name = "*"
-
     subject = x509.Name(
         [
             x509.NameAttribute(
@@ -69,10 +61,6 @@ def generate_adhoc_ssl_pair(
             x509.NameAttribute(NameOID.COMMON_NAME, common_name),
         ]
     )
-
-    subject_altenative_names: List[GeneralName] = [x509.DNSName(common_name)]
-    if ip_address:
-        subject_altenative_names.append(x509.IPAddress(ip_address))
 
     cert = (
         x509.CertificateBuilder()
@@ -86,6 +74,8 @@ def generate_adhoc_ssl_pair(
         .add_extension(x509.SubjectAlternativeName([x509.DNSName(common_name)]), critical=False)
         .sign(pkey, hashes.SHA256(), backend=default_backend())
     )
+
+    logger.debug("Self signed certificate created for CommonName: %s", common_name)
 
     return (
         cert.public_bytes(serialization.Encoding.PEM),

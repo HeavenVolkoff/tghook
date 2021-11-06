@@ -19,7 +19,7 @@ from ipaddress import IPv4Address, AddressValueError
 # External
 from tap import Tap
 
-from tghook import __summary__, __version__, start_server
+from tghook import EXTERNAL_HOST_TYPE, __summary__, __version__, start_server
 from tghook.logger import set_level
 from tghook.example import IMPLEMENTATIONS
 
@@ -72,35 +72,22 @@ def main(raw_args: List[str] = sys.argv[1:]) -> NoReturn:
         arg_parser.print_usage()
         sys.exit(1)
 
-    external_host = args.external_host
-    alternative_name = args.alternative_name
+    if args.alternative_name is not None:
+        if isinstance(args.external_host, str):
+            raise ValueError("Alternative Name can only be used when External Host is an IP")
+        external_host: EXTERNAL_HOST_TYPE = (args.alternative_name, args.external_host)
+    else:
+        external_host = args.external_host
 
     try:
-        if alternative_name is None:
-            start_server(
-                implementation,
-                args.bot_key,
-                host=args.host,
-                port=args.port,
-                external_host=external_host,
-                external_port=args.external_port,
-            )
-        elif isinstance(external_host, str):
-            print(
-                "alternative_name is set, but external_host is not an IPv4Address", file=sys.stderr
-            )
-            arg_parser.print_usage()
-            sys.exit(1)
-        else:
-            start_server(
-                implementation,
-                args.bot_key,
-                host=args.host,
-                port=args.port,
-                external_host=external_host,
-                external_port=args.external_port,
-                alternative_name=alternative_name,
-            )
+        start_server(
+            implementation,
+            args.bot_key,
+            host=args.host,
+            port=args.port,
+            external_host=external_host,
+            external_port=args.external_port,
+        )
     except Exception:
         sys.exit(1)
 

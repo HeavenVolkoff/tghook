@@ -8,7 +8,8 @@ Licensed under:
 # Internal
 import os
 import sys
-from typing import Dict, Tuple, AnyStr, Optional
+from pprint import PrettyPrinter
+from typing import Any, Dict, Tuple, AnyStr, Callable, Optional
 from logging import INFO, DEBUG, ERROR, WARNING, CRITICAL, Formatter as BaseFormatter, LogRecord
 
 
@@ -63,6 +64,16 @@ def _safe_unicode(message: Optional[AnyStr]) -> str:
     return message or ""
 
 
+_DEVNULL = open(os.devnull, "w")
+_DEFAULT_DISPATCH: Tuple[Callable[..., Any], ...] = (
+    dict.__repr__,
+    list.__repr__,
+    tuple.__repr__,
+    set.__repr__,
+    frozenset.__repr__,
+)
+
+
 class Formatter(BaseFormatter):
     """
     Log formatter used in Tornado. Key features of this formatter are:
@@ -100,6 +111,7 @@ class Formatter(BaseFormatter):
         supports_color = _stderr_supports_color(colors)
 
         self._fmt = fmt
+        self._pprinter = PrettyPrinter(width=80, stream=_DEVNULL, compact=True)
         if supports_color is None:
             self._colors = None
             self._normal = ""
@@ -107,12 +119,32 @@ class Formatter(BaseFormatter):
             self._colors, self._normal = supports_color
 
     def format(self, record: LogRecord) -> str:
+        # _dispatch is cpython specifc
+        pprint_supported = getattr(self._pprinter, "_dispatch", _DEFAULT_DISPATCH)
         try:
-            message = record.getMessage()
-            assert isinstance(message, str)
+            message = str(record.msg)
+            if isinstance(record.args, tuple):
+                message = message % tuple(
+                    (
+                        self._pprinter.pformat(arg)
+                        if type(object).__repr__ in pprint_supported
+                        else arg
+                    )
+                    for arg in record.args
+                )
+            elif record.args is not None:
+                message = message % {
+                    name: (
+                        self._pprinter.pformat(arg)
+                        if type(object).__repr__ in pprint_supported
+                        else arg
+                    )
+                    for name, arg in record.args.items()
+                }
             record.message = _safe_unicode(message)
         except Exception as exc:
-            record.message = "Bad message (%r): %r" % (exc, record.__dict__)
+            record.message = "Bad message"
+            record.exc_info = (type(exc), exc, exc.__traceback__)
 
         record.asctime = self.formatTime(record, self.datefmt)
 

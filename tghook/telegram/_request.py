@@ -12,7 +12,6 @@ You should have received a copy of the GNU General Public License along with thi
 # Internal
 import ssl
 import json
-from pprint import pformat
 from typing import Any, Dict, Optional
 from urllib.error import URLError, HTTPError
 from urllib.parse import quote, urljoin
@@ -50,11 +49,9 @@ def request_telegram(
 
     if data is None:
         req_method = "GET"
+        headers.pop("Content-Length", None)
         logger.debug(
-            'Making request to Telegram API - "%s /%s"\nheaders: %s',
-            req_method,
-            method,
-            pformat(headers, compact=False, sort_dicts=True),
+            'Making request to Telegram API - "%s /%s"\nheaders: %s', req_method, method, headers
         )
     else:
         req_method = "POST"
@@ -63,7 +60,7 @@ def request_telegram(
             'Making request to Telegram API - "%s /%s"\nheaders: %s\n%s',
             req_method,
             method,
-            pformat(headers, compact=False, sort_dicts=True),
+            headers,
             data,
         )
 

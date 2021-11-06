@@ -17,15 +17,15 @@ _telegram_subnets = (IPv4Network("91.108.4.0/22"), IPv4Network("149.154.160.0/20
 
 TELEGRAM_API = "https://api.telegram.org"
 TELEGRAM_SUBNETS = (
-    _telegram_subnets
-    if __debug__
-    else (
+    (
         *_telegram_subnets,
         IPv4Network("10.0.0.0/8"),
         IPv4Network("127.0.0.0/8"),
         IPv4Network("172.16.0.0/12"),
         IPv4Network("192.168.0.0/16"),
     )
+    if __debug__
+    else _telegram_subnets
 )
 TELEGRAM_VALID_PORTS = (443, 80, 88, 8443)
 

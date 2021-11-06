@@ -13,12 +13,11 @@ You should have received a copy of the GNU General Public License along with thi
 from typing import List, Tuple, Union, Optional
 from ipaddress import IPv4Address, AddressValueError
 from urllib.parse import SplitResult, quote, urljoin, urlsplit, urlunsplit
-from email.message import Message
 
 # Project
 from ._request import request_telegram
 from ._constants import TELEGRAM_VALID_PORTS
-from .._multipart_form_data import MIME_UTF_TEXT, FormPart, MIMEType, encode_multipart_formdata
+from .._multipart_form_data import FormPart, MIMEType, encode_multipart_formdata
 
 
 def _parse_webhook(webhook: Union[str, Tuple[Union[str, IPv4Address], int]]) -> SplitResult:
@@ -68,16 +67,8 @@ def set_webhook(
         raise ValueError(f"max_connections must be between 1-100, not: {max_connections}")
 
     form_data = [
-        FormPart(
-            name="url",
-            data=urljoin(urlunsplit(url), quote(bot_token)),
-            type=MIME_UTF_TEXT,
-        ),
-        FormPart(
-            name="max_connections",
-            data=str(max_connections),
-            type=MIME_UTF_TEXT,
-        ),
+        FormPart(name="url", data=urljoin(urlunsplit(url), quote(bot_token))),
+        FormPart(name="max_connections", data=str(max_connections)),
     ]
     if ip_address is not None:
         try:
@@ -86,29 +77,18 @@ def set_webhook(
         except AddressValueError:
             pass
 
-        form_data.append(
-            FormPart(
-                name="ip_address",
-                data=ip_address.compressed,
-                type=MIME_UTF_TEXT,
-            )
-        )
+        form_data.append(FormPart(name="ip_address", data=ip_address.compressed))
     if certificate is not None:
         form_data.append(
             FormPart(
                 name="certificate",
                 data=certificate,
-                type=MIMEType("application", "x-pem-file"),
+                type=MIMEType("application", "octet-stream"),
+                filename="cert.pem",
             )
         )
     if allowed_updates is not None:
-        form_data.append(
-            FormPart(
-                name="allowed_updates",
-                data=str(allowed_updates),
-                type=MIME_UTF_TEXT,
-            )
-        )
+        form_data.append(FormPart(name="allowed_updates", data=str(allowed_updates)))
 
     multipart_formdata = encode_multipart_formdata(form_data)
 

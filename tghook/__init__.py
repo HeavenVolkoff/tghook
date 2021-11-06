@@ -13,7 +13,7 @@ You should have received a copy of the GNU General Public License along with thi
 from importlib.metadata import metadata
 
 # Project
-from .bot_server import start_server
+from ._bot_server import EXTERNAL_HOST_TYPE, start_server
 
 try:
     _metadata = metadata(__name__)
@@ -34,4 +34,4 @@ except Exception:  # pragma: no cover
     __version__ = "0.0a0"
     __summary__ = ""
 
-__all__ = ("__author__", "__version__", "__summary__", "start_server")
+__all__ = ("__author__", "__version__", "__summary__", "start_server", "EXTERNAL_HOST_TYPE")
