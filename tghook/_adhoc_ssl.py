@@ -42,7 +42,6 @@ def generate_adhoc_ssl_pair(organization_name: str, common_name: str) -> Tuple[b
     Args:
         organization_name: Name of the organization that generated the ssl certificate
         common_name: Common name used to identify the owner of the certificate. (Also used as SubjectAltenativeName)
-        ip_address: IP address to be added as a SubjectAltenativeName
 
     Returns:
         Content for the public certificate and private

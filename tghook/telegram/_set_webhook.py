@@ -92,15 +92,11 @@ def set_webhook(
 
     multipart_formdata = encode_multipart_formdata(form_data)
 
-    # WARNING: MUST execute multipart_formdata.as_bytes BEFORE multipart_formdata.get_boundary
-    #          because the message boundary is generated when getting data. So, if the order is
-    #          reversed get_boundary WILL return
-    data = multipart_formdata.as_bytes()
     response = request_telegram(
         bot_token,
         "setWebhook",
-        {"Content-Type": f"multipart/form-data; boundary={multipart_formdata.get_boundary()}"},
-        data,
+        {"Content-Type": f"multipart/form-data; boundary={multipart_formdata.boundary}"},
+        multipart_formdata.data,
     )
 
     if not response:

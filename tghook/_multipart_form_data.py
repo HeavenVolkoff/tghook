@@ -39,7 +39,12 @@ class FormPart(NamedTuple):
     filename: Optional[str] = None
 
 
-def encode_multipart_formdata(parts: Sequence[FormPart]) -> MIMEMultipart:
+class MultiPartFormData(NamedTuple):
+    data: bytes
+    boundary: str
+
+
+def encode_multipart_formdata(parts: Sequence[FormPart]) -> MultiPartFormData:
     """Encode a sequence of form parts as multipart/form-data
 
     Args:
@@ -82,7 +87,10 @@ def encode_multipart_formdata(parts: Sequence[FormPart]) -> MIMEMultipart:
 
         form_data.attach(data)
 
-    return form_data
+    # WARNING: MUST execute multipart_formdata.as_bytes BEFORE multipart_formdata.get_boundary
+    #          because the message boundary is generated when getting data. So, if the order is
+    #          reversed get_boundary WILL return
+    return MultiPartFormData(multipart_formdata.as_bytes(), multipart_formdata.get_boundary())
 
 
 __all__ = ("MIMEType", "MIME_JSON", "MIME_UTF_TEXT", "FormPart", "encode_multipart_formdata")
