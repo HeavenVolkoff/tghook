@@ -12,6 +12,7 @@ You should have received a copy of the GNU General Public License along with thi
 # Internal
 import json
 import signal
+from sys import exc_info
 from typing import Any, Type, Tuple, Union, Literal, Callable, Optional
 from hashlib import md5
 from ipaddress import IPv4Address
@@ -54,6 +55,7 @@ class BotRequestHandler(BaseHTTPRequestHandler):
         )
         self._impl = bot_impl
         self._token = bot_token
+        self._update_id = 0
         self._greetings = (
             f"""<!DOCTYPE html>
 <html lang="en">
@@ -126,6 +128,12 @@ class BotRequestHandler(BaseHTTPRequestHandler):
             self.send_error(400)
             return
 
+        # Ignore already processed updates
+        if update.update_id <= self._update_id:
+            self.send_response(202)
+            self.end_headers()
+            return
+
         try:
             res = self._impl(update)
         except Exception as exc:
@@ -139,16 +147,26 @@ class BotRequestHandler(BaseHTTPRequestHandler):
         else:
             # TODO: Implement multipart/form-data for response types that have InputFile
             try:
-                data = res.json().encode("utf-8")
+                data_dict = res.dict(skip_defaults=True)
+                method = type(res).__name__
+                logger.debug("Answering request with %s: %s", method, data_dict)
+                data_dict['method'] = method[0].lower() + method[1:]
+                data = json.dumps(data_dict).encode('utf8')
+                del res, method, data_dict
             except Exception as exc:
                 logger.error("Failed to serialize bot implementation response", exc_info=exc)
                 self.send_error(500)
                 return
 
             self.send_response(200)
-            self.send_header("Content-type", f"{MIME_JSON.main}/{MIME_JSON.sub}; charset=utf-8")
+            self.send_header("Content-Type", f"{MIME_JSON.main}/{MIME_JSON.sub}; charset=utf-8")
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
+
+            self.wfile.write(data)
+
+        # Update tracking id
+        self._update_id = update.update_id
 
 
 class HTTPServer(ThreadingHTTPServer):
@@ -169,6 +187,16 @@ class HTTPServer(ThreadingHTTPServer):
         client_address: Union[Tuple[str, int], str],
     ) -> None:
         self.RequestHandlerClass(request, client_address, self, **self._request_handler_kwargs)
+
+    # Pyright is wrong
+    def handle_error(  # type: ignore[reportIncompatibleMethodOverride]
+        self, request: bytes, client_address: Union[Tuple[str, int], str]
+    ) -> None:
+        logger.error(
+            "Error occurred during processing of request from %s",
+            client_address,
+            exc_info=exc_info(),
+        )
 
 
 def start_server(

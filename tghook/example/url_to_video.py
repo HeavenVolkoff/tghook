@@ -17,7 +17,11 @@ from ..telegram.types import Update, SendMessage
 
 
 def url_to_video(update: Update) -> Optional[SendMessage]:
-    return None
+    message = update.message
+    if message is None:
+        return None
+
+    return SendMessage(chat_id=message.chat.id, text="Hello")
 
 
 __all__ = ("url_to_video",)

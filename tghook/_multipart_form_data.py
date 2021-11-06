@@ -90,7 +90,7 @@ def encode_multipart_formdata(parts: Sequence[FormPart]) -> MultiPartFormData:
     # WARNING: MUST execute multipart_formdata.as_bytes BEFORE multipart_formdata.get_boundary
     #          because the message boundary is generated when getting data. So, if the order is
     #          reversed get_boundary WILL return
-    return MultiPartFormData(multipart_formdata.as_bytes(), multipart_formdata.get_boundary())
+    return MultiPartFormData(form_data.as_bytes(), form_data.get_boundary())
 
 
 __all__ = ("MIMEType", "MIME_JSON", "MIME_UTF_TEXT", "FormPart", "encode_multipart_formdata")
