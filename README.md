@@ -4,7 +4,7 @@ A simple framework for creating telegram bots servers that exclusively use webho
 
 ## Examples
 
-- [url_to_video](./tghook/url_to_video):
+- [url_to_video](./tghook/example/url_to_video.py):
   A simple bot that attempts to extract direct video URLs from websites using yt-dlp
 
 Copyright © 2021 Vítor Vasconcellos
