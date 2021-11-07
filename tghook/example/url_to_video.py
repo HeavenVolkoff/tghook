@@ -16,7 +16,8 @@ from logging import INFO, DEBUG, Logger
 from urllib.parse import urlsplit
 
 # External
-from yt_dlp import YoutubeDL  # type: ignore
+from yt_dlp import YoutubeDL  # type: ignore[import, reportMissingTypeStubs]
+from yt_dlp.downloader import shorten_protocol_name  # type: ignore[import, reportMissingTypeStubs]
 
 # Project
 from ..logger import get_logger
@@ -111,28 +112,41 @@ Some hosts are ignore, because telegram already handles them:
             continue
 
         try:
-            info = _YDL.extract_info(url, download=False)
+            video_info = _YDL.extract_info(url, download=False)
         except Exception:
             continue
 
-        if not isinstance(info, Mapping):
+        if not isinstance(video_info, Mapping):
             continue
 
-        url = info.get("url", None)
-        if url is None:
-            formats = info.get("formats", None)
-            if not isinstance(formats, Sequence):
-                continue
+        url = None
+        video_formats = video_info.get("formats")
+        if isinstance(video_formats, Sequence):
+            # Telegram shows a inline preview for http(s) videos, so we prefer them
+            video_format = next(
+                (
+                    format
+                    # Reverse, because the list is in crescent quality order
+                    for format in reversed(video_formats)
+                    if (
+                        isinstance(format, Mapping)
+                        and (
+                            shorten_protocol_name(format.get("protocol", "unknown"), simplify=True)
+                            == "http"
+                        )
+                    )
+                ),
+                None,
+            )
+            if video_format is not None:
+                url = video_format.get("url")
 
-            video_format = formats[-1]
-            if not isinstance(video_format, Mapping):
-                continue
-
-            url = video_format.get("url", None)
+        if url is None:  # No http video available, give the url for yt_dlp choosen format
+            url = video_info.get("url")
 
         if url is not None:
             return SendMessage(
-                text=url, chat_id=message.chat.id, reply_to_message_id=message.message_id
+                text=str(url), chat_id=message.chat.id, reply_to_message_id=message.message_id
             )
 
     if message.chat.type == Type.private:

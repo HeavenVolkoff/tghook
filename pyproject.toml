@@ -141,6 +141,7 @@ typeCheckingMode = "strict"
 reportImportCycles = "none"
 reportUnknownMemberType = "none"
 reportUnknownVariableType = "none"
+reportUnknownArgumentType = "none"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
