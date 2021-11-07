@@ -23,7 +23,10 @@ from ._constants import TELEGRAM_API
 
 logger = get_logger(__name__)
 
+# TODO: Make a generic function that handle any telegram type and converts is to bytes
+# TODO: It should handle simple json and multipart/form-data for content with InputFile
 
+# TODO: Deduce request from telegram type
 def request_telegram(
     bot_token: str,
     method: str,

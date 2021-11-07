@@ -10,6 +10,7 @@ You should have received a copy of the GNU General Public License along with thi
 """
 
 # Internal
+import os
 import sys
 from typing import List, Union, Literal, NoReturn, Optional
 from logging import INFO, WARN, DEBUG
@@ -88,6 +89,11 @@ def main(raw_args: List[str] = sys.argv[1:]) -> NoReturn:
             external_host=external_host,
             external_port=args.external_port,
         )
+    except BrokenPipeError:
+        # https://docs.python.org/3/library/signal.html#note-on-sigpipe
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        sys.exit(r"\nERROR: {err}")
     except Exception:
         sys.exit(1)
 

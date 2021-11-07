@@ -1,10 +1,25 @@
 [tool.poetry]
 name = "tghook"
 readme = "README.md"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Vítor Vasconcellos <vasconcellos.dev@gmail.com>"]
 license = "GPL-2.0-or-later"
+keywords = ["telegram", "bot", "library", "webhook", "tghook"]
+repository = "https://github.com/HeavenVolkoff/tghook"
+classifiers = [
+  "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+  "Topic :: Communications :: Chat",
+  "Topic :: Software Development :: Libraries",
+  "Environment :: Console",
+  "Environment :: Web Environment",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Developers",
+  "Development Status :: 3 - Alpha",
+]
 description = "A simple telegram bot that resolves video urls using yt-dlp"
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/HeavenVolkoff/tghook/issues"
 
 [tool.poetry.extras]
 cmd = ["typed-argument-parser", "yt-dlp"]
@@ -14,18 +29,20 @@ tghook = 'tghook.__main__:main'
 
 [tool.poetry.dependencies]
 python = "^3.9"
-"antenna.security" = { git = "https://gitlab.com/VitorVasconcellos/antenna.security.git", branch = "master" }
-cryptography = "^35.0.0"
+# Hard dependencies
 pydantic = "^1.8.2"
+cryptography = "^35.0.0"
+"antenna.security" = { git = "https://gitlab.com/VitorVasconcellos/antenna.security.git", branch = "master" }
+# Optional dependencies
 typed-argument-parser = { version = "^1.7.1", optional = true }
-yt-dlp = { version = "^2021.10.22", optional = true }
+yt-dlp = { version = "2021.*,!=2021.10.22", optional = true }
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.910"
 black = "^21.10b0"
 isort = "^5.9.3"
-datamodel-code-generator = { extras = ["http"], version = "^0.11.14" }
 poethepoet = "^0.10.0"
+datamodel-code-generator = { extras = ["http"], version = "^0.11.14" }
 
 [tool.poe.tasks]
 check = { shell = "mypy .; npx pyright" }
@@ -59,6 +76,7 @@ Currently some manual work is necessary:
 - Find all *PostRequest classes and export an Union type of them called RequestTypes
 - Rename PostRequest sufix from class names
 - Resolve mypy and pyright issues
+- Check if all types definitions have they forward references updated
 
 VSCode Tip for removing classes:
     - Use local search to find relevant class names
@@ -68,6 +86,25 @@ VSCode Tip for removing classes:
     - SHIFT + ARROW_DOWN
     - DEL
 EOF"""
+
+[tool.mypy]
+pretty = true
+strict = true
+color_output = true
+error_summary = true
+ignore_errors = false
+python_version = "3.9"
+follow_imports = "normal"
+strict_optional = true
+show_error_codes = true
+warn_unreachable = true
+python_executable = "./.venv/bin/python"
+show_error_context = true
+show_column_numbers = true
+warn_unused_configs = true
+warn_unused_ignores = false              # for compatibility with pyright
+warn_incomplete_stub = true
+disallow_any_unimported = true
 
 [tool.isort]
 quiet = true
@@ -93,25 +130,6 @@ import_heading_localfolder = "Project"
 color = true
 line-length = 99
 target-version = ['py38']
-
-[tool.mypy]
-pretty = true
-strict = true
-color_output = true
-error_summary = true
-ignore_errors = false
-python_version = "3.9"
-follow_imports = "normal"
-strict_optional = true
-show_error_codes = true
-warn_unreachable = true
-python_executable = "./.venv/bin/python"
-show_error_context = true
-show_column_numbers = true
-warn_unused_configs = true
-warn_unused_ignores = false              # for compatibility with pyright
-warn_incomplete_stub = true
-disallow_any_unimported = true
 
 [tool.pyright]
 venv = ".venv"

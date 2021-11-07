@@ -1,11 +1,24 @@
 # tghook
 
-A simple framework for creating telegram bots servers that exclusively use webhook for communication
+A simple python `3.9+` library for creating telegram bots servers that exclusively use webhook for communication
+
+> This project is in its infancy. It currently implements a minimum scope with a working HTTPS server and webhook setup,
+> plus external calls to a user defined function for implementing the bot functionality.
+>
+> The API is **NOT** stable, and may change completely overnight.
+
+## Documentation
+
+Currently there are no plans to write one. The code is fairly small and reasonable commented.
+
+If you want to know how to use this, check the examples below.
 
 ## Examples
 
+Some real world use cases for this library:
+
 - [url_to_video](./tghook/example/url_to_video.py):
-  A simple bot that attempts to extract direct video URLs from websites using yt-dlp
+  A simple bot that attempts to extract direct video URLs from websites using yt-dlp, check it live on telegram [here](https://t.me/get_videos_url_bot)
 
 Copyright © 2021 Vítor Vasconcellos
 

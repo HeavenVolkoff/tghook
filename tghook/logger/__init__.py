@@ -74,6 +74,8 @@ def get_logger(
             maxBytes=file_size_limit,
             backupCount=file_count_limit,
         )
+
+        # TODO: Replace with a json formatter
         rfh.setFormatter(Formatter(colors=None))
 
         log.addHandler(rfh)

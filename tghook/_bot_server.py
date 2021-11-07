@@ -27,7 +27,7 @@ from .logger import get_logger
 from .telegram import TELEGRAM_SUBNETS, get_me, set_webhook, delete_webhook
 from ._adhoc_ssl import generate_adhoc_ssl_pair, create_server_ssl_context
 from ._external_ip import retrieve_external_ip
-from .telegram.types import Update, RequestTypes
+from .telegram.types import User, Update, RequestTypes
 from ._multipart_form_data import MIME_JSON
 
 logger = get_logger(__name__)
@@ -45,14 +45,17 @@ class BotRequestHandler(BaseHTTPRequestHandler):
         client_address: Tuple[str, int],
         server: BaseServer,
         *,
-        bot_impl: Callable[[Update], Optional[RequestTypes]],
-        bot_name: Optional[str],
+        bot: User,
+        bot_impl: Callable[[User, Update], Optional[RequestTypes]],
         bot_token: str,
     ) -> None:
         # All custom code must come before super().__init__, due to how request are handled
         greetings = (
-            f'You can talk to me <a href="https://t.me/{bot_name}">here</a>' if bot_name else ""
+            f'You can talk to me <a href="https://t.me/{bot.username}">here</a>'
+            if bot.username
+            else ""
         )
+        self._bot = bot
         self._impl = bot_impl
         self._token = bot_token
         self._update_id = 0
@@ -63,7 +66,7 @@ class BotRequestHandler(BaseHTTPRequestHandler):
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{bot_name}</title>
+    <title>{bot.first_name}</title>
 </head>
 <body>
     <h2>Hello, I am a Telegram Bot.</h2>
@@ -135,7 +138,7 @@ class BotRequestHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            res = self._impl(update)
+            res = self._impl(self._bot, update)
         except Exception as exc:
             logger.error("Bot implementation failed", exc_info=exc)
             self.send_error(500)
@@ -150,8 +153,8 @@ class BotRequestHandler(BaseHTTPRequestHandler):
                 data_dict = res.dict(skip_defaults=True)
                 method = type(res).__name__
                 logger.debug("Answering request with %s: %s", method, data_dict)
-                data_dict['method'] = method[0].lower() + method[1:]
-                data = json.dumps(data_dict).encode('utf8')
+                data_dict["method"] = method[0].lower() + method[1:]
+                data = json.dumps(data_dict).encode("utf8")
                 del res, method, data_dict
             except Exception as exc:
                 logger.error("Failed to serialize bot implementation response", exc_info=exc)
@@ -200,7 +203,7 @@ class HTTPServer(ThreadingHTTPServer):
 
 
 def start_server(
-    bot_impl: Callable[[Update], Optional[RequestTypes]],
+    bot_impl: Callable[[User, Update], Optional[RequestTypes]],
     bot_token: str,
     *,
     host: str = "0.0.0.0",
@@ -262,9 +265,9 @@ def start_server(
             HTTPServer(
                 (host, port),
                 BotRequestHandler,
-                bot_name=bot.username,
-                bot_token=bot_token,
+                bot=bot,
                 bot_impl=bot_impl,
+                bot_token=bot_token,
             )
         )
         # Wrap TCP socket with SSL/TLS to enable HTTPS support in the server

@@ -484,7 +484,7 @@ ssv = ["swagger-spec-validator (>=2.4,<3.0)"]
 
 [[package]]
 name = "pycparser"
-version = "2.20"
+version = "2.21"
 description = "C parser in Python"
 category = "main"
 optional = false
@@ -707,7 +707,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "yt-dlp"
-version = "2021.10.22"
+version = "2021.10.10"
 description = "Command-line program to download videos from YouTube.com and many other other video platforms."
 category = "main"
 optional = true
@@ -724,7 +724,7 @@ cmd = ["typed-argument-parser", "yt-dlp"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "d562b913b7a6318ef0a41901d516f8500e5f8b02fb2172d49f4854c5dcc1e09a"
+content-hash = "fa03f3d0ec8dc49b4f2becdca84f2a86750e7cdcb9f3771b269e34cd10b24117"
 
 [metadata.files]
 "antenna.security" = []
@@ -1024,8 +1024,8 @@ prance = [
     {file = "prance-0.21.8.0.tar.gz", hash = "sha256:ce06feef8814c3436645f3b094e91067b1a111bc860a51f239f93437a8d4b00e"},
 ]
 pycparser = [
-    {file = "pycparser-2.20-py2.py3-none-any.whl", hash = "sha256:7582ad22678f0fcd81102833f60ef8d0e57288b6b5fb00323d101be910e35705"},
-    {file = "pycparser-2.20.tar.gz", hash = "sha256:2d475327684562c3a96cc71adf7dc8c4f0565175cf86b6d7a404ff4c771f15f0"},
+    {file = "pycparser-2.21-py2.py3-none-any.whl", hash = "sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9"},
+    {file = "pycparser-2.21.tar.gz", hash = "sha256:e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206"},
 ]
 pycryptodomex = [
     {file = "pycryptodomex-3.11.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:7abfd84a362e4411f7c5f5758c18cbf377a2a2be64b9232e78544d75640c677e"},
@@ -1300,6 +1300,6 @@ websockets = [
     {file = "websockets-10.0.tar.gz", hash = "sha256:c4fc9a1d242317892590abe5b61a9127f1a61740477bfb121743f290b8054002"},
 ]
 yt-dlp = [
-    {file = "yt-dlp-2021.10.22.tar.gz", hash = "sha256:a24b9666bd2234149e4da8c4f16bb8e5f746c29428d12ee04fc1c11b5247a307"},
-    {file = "yt_dlp-2021.10.22-py2.py3-none-any.whl", hash = "sha256:4900fdfffa3de0b09a74f3d7fe98e4d5e21f3ce74db0c106c942614f2ebc3368"},
+    {file = "yt-dlp-2021.10.10.tar.gz", hash = "sha256:cc96211e8e55ebbb48d2e6609c0d0942507eb5471b2ce74e38f7b95f8d70a4e7"},
+    {file = "yt_dlp-2021.10.10-py2.py3-none-any.whl", hash = "sha256:6dbf58013226b5400b77188dcd75038685a42f505d143d531156045f96af4440"},
 ]

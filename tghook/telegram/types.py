@@ -8197,6 +8197,7 @@ class ChatMemberUpdated(BaseModel):
 
 Update.update_forward_refs()
 Chat.update_forward_refs()
+Message.update_forward_refs()
 
 RequestTypes = Union[
     GetUpdates,

@@ -14,9 +14,9 @@ from typing import Dict, Callable, Optional
 
 # Project
 from .url_to_video import url_to_video
-from ..telegram.types import Update, RequestTypes
+from ..telegram.types import User, Update, RequestTypes
 
-IMPLEMENTATIONS: Dict[str, Callable[[Update], Optional[RequestTypes]]] = {
+IMPLEMENTATIONS: Dict[str, Callable[[User, Update], Optional[RequestTypes]]] = {
     "url_to_video": url_to_video
 }
 
