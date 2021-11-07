@@ -37,6 +37,7 @@ EXTERNAL_HOST_TYPE = Union[str, None, IPv4Address, Tuple[str, Optional[IPv4Addre
 
 class BotRequestHandler(BaseHTTPRequestHandler):
     # Bump http version for keep_alive
+    # https://docs.python.org/3/library/http.server.html#http.server.BaseHTTPRequestHandler.protocol_version
     protocol_version = "HTTP/1.1"
 
     def __init__(

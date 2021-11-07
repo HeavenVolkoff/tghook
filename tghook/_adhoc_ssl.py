@@ -53,10 +53,7 @@ def generate_adhoc_ssl_pair(organization_name: str, common_name: str) -> Tuple[b
 
     subject = x509.Name(
         [
-            x509.NameAttribute(
-                NameOID.ORGANIZATION_NAME,
-                organization_name if organization_name else "Dummy Certificate",
-            ),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, organization_name),
             x509.NameAttribute(NameOID.COMMON_NAME, common_name),
         ]
     )
@@ -101,6 +98,8 @@ def create_server_ssl_context(cert: bytes, key: bytes) -> SSLContext:
 
     """
     with ExitStack() as stack:
+        # We are required to create temporary files for the certificate and key because the underling ssl implementation
+        # only loads from files
         cert_temp_file = stack.enter_context(NamedTemporaryFile(mode="w+b"))
         cert_temp_file.write(cert)
         cert_temp_file.flush()

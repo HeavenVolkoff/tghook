@@ -25,13 +25,22 @@ from tghook.logger import set_level
 from tghook.example import IMPLEMENTATIONS
 
 
-def _to_ip_or_host(url: Optional[str]) -> Union[str, None, IPv4Address]:
-    if url is None:
-        return url
+def _to_ip_or_host(hostname: Optional[str]) -> Union[str, None, IPv4Address]:
+    """Parse argument into IPv4Address or leave it as is for hostnames
+
+    Args:
+        hostname: Hostname to be parsed
+
+    Returns:
+        IP or Hostname
+
+    """
+    if hostname is None:
+        return hostname
     try:
-        return IPv4Address(url)
+        return IPv4Address(hostname)
     except AddressValueError:
-        return url
+        return hostname
 
 
 class ArgumentParser(Tap):
@@ -65,8 +74,10 @@ def main(raw_args: List[str] = sys.argv[1:]) -> NoReturn:
         arg_parser.print_usage()
         sys.exit(1)
 
+    # Set logger lever according to user choise, default is WARN
     set_level(DEBUG if args.verbose >= 2 else (INFO if args.verbose == 1 else WARN))
 
+    # Get example bot implementation according to user choise
     implementation = IMPLEMENTATIONS.get(args.implementation, None)
     if implementation is None:
         print("Invalid implementation", file=sys.stderr)
