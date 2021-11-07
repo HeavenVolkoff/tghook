@@ -73,7 +73,7 @@ def set_webhook(
     if ip_address is not None:
         try:
             IPv4Address(url.hostname)
-            raise ValueError("ip SHOULD be None when webhook is already an ip address")
+            raise ValueError("IP SHOULD be None when webhook is already an ip address")
         except AddressValueError:
             pass
 

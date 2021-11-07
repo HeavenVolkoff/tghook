@@ -11,10 +11,12 @@ You should have received a copy of the GNU General Public License along with thi
 
 # Internal
 import ssl
-import json
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, AddressValueError
 from urllib.error import URLError, HTTPError
 from urllib.request import urlopen
+
+# External
+import orjson
 
 
 def retrieve_external_ip() -> IPv4Address:
@@ -33,8 +35,8 @@ def retrieve_external_ip() -> IPv4Address:
             context=ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH),
         ) as req:
             try:
-                res = json.loads(req.read().decode("utf-8"))
-            except Exception as exc:
+                res = orjson.loads(req.read())
+            except orjson.JSONEncodeError as exc:
                 raise RuntimeError("Failed to parse ipify response") from exc
 
             ip = res.get("ip", None)
@@ -43,7 +45,7 @@ def retrieve_external_ip() -> IPv4Address:
 
             try:
                 return IPv4Address(ip)
-            except ValueError as exc:
+            except AddressValueError as exc:
                 raise RuntimeError("ipify returned an invalid response") from exc
 
     except HTTPError as exc:

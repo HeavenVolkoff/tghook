@@ -10,17 +10,19 @@ You should have received a copy of the GNU General Public License along with thi
 """
 
 # Internal
-import json
 import signal
 from sys import exc_info
 from typing import Any, Type, Tuple, Union, Literal, Callable, Optional
 from hashlib import md5
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, AddressValueError
 from threading import Thread
 from contextlib import ExitStack
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from socketserver import BaseServer, BaseRequestHandler
 from urllib.parse import unquote
+
+# External
+import orjson
 
 # Project
 from .logger import get_logger
@@ -113,20 +115,26 @@ class BotRequestHandler(BaseHTTPRequestHandler):
             self.send_error(404, explain="Request is probably NOT from Telegram API")
             return
 
-        client_address = IPv4Address(self.client_address[0])
+        try:
+            client_address = IPv4Address(self.client_address[0])
+        except AddressValueError:
+            # https://core.telegram.org/bots/webhooks#the-short-version
+            # https://datatracker.ietf.org/doc/html/rfc7540#section-9.1.2
+            self.send_error(421, explain="Telegram API only communicates with IPv4")
+            return
+
         if not any(client_address in subnet for subnet in TELEGRAM_SUBNETS):
+            # TODO: Add logic for limiting clients that are outside telegram subnets and that send invalid data
             logger.warn(
                 "Bot resquest comes from an address outside the known telegram subnets. %s not in %s",
                 client_address,
                 TELEGRAM_SUBNETS,
             )
 
+        # TODO: Validate Content-Type and Content-Encoding before reading body, answer with 415 if invalid
         try:
-            update = Update(
-                **json.loads(
-                    self.rfile.read(int(self.headers.get("Content-Length", 0))).decode("utf-8")
-                )
-            )
+            update_raw = orjson.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+            update = Update.parse_obj(update_raw)
         except Exception as exc:
             logger.error("Telegram API sent an invalid Update object", exc_info=exc)
             self.send_error(400)
@@ -138,6 +146,9 @@ class BotRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
+        logger.debug("Telegram API sent an Update: %s", update_raw)
+        del update_raw
+
         try:
             res = self._impl(self._bot, update)
         except Exception as exc:
@@ -145,7 +156,7 @@ class BotRequestHandler(BaseHTTPRequestHandler):
             self.send_error(500)
             return
 
-        if res is None:
+        if res is None:  # TODO: Validate Accept and Accept-Encoding headers before sending data
             self.send_response(200)
             self.end_headers()
         else:
@@ -153,10 +164,10 @@ class BotRequestHandler(BaseHTTPRequestHandler):
             try:
                 data_dict = res.dict(skip_defaults=True)
                 method = type(res).__name__
+
                 logger.debug("Answering request with %s: %s", method, data_dict)
-                data_dict["method"] = method[0].lower() + method[1:]
-                data = json.dumps(data_dict).encode("utf8")
-                del res, method, data_dict
+
+                data = orjson.dumps({**data_dict, "method": method[0].lower() + method[1:]})
             except Exception as exc:
                 logger.error("Failed to serialize bot implementation response", exc_info=exc)
                 self.send_error(500)
@@ -229,7 +240,7 @@ def start_server(
     except Exception as exc:
         raise RuntimeError("Failed to authenticate bot with Telegram API") from exc
 
-    logger.info(f"Hello, I am %s (id: %d)", bot.first_name, bot.id)
+    logger.info("Hello, I am %s (id: %d)", bot.first_name, bot.id)
 
     if not bot.is_bot:  # Hun?!
         logger.warn(f"It seems that I have gained sentience")
@@ -278,7 +289,7 @@ def start_server(
         server_thread = Thread(target=server.serve_forever)
         server_thread.start()
 
-        logger.info(f"Bot server started. Address: %s:%d", external_host, external_port)
+        logger.info("Bot server started. Address: %s:%d", external_host, external_port)
 
         # Setup signal handling for gracious shutdown
         signal.signal(signal.SIGINT, lambda _, __: server.shutdown())

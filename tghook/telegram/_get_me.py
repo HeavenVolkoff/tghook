@@ -28,7 +28,7 @@ def get_me(bot_token: str) -> User:
     if not isinstance(response, dict):
         raise RuntimeError("Telegram answered get_me with an invalid response")
 
-    return User(**response)
+    return User.parse_obj(response)
 
 
 __all__ = ("get_me",)

@@ -9,7 +9,7 @@ Licensed under:
 import os
 import sys
 from pprint import PrettyPrinter
-from typing import Any, Dict, Tuple, AnyStr, Callable, Optional
+from typing import Any, Dict, Tuple, AnyStr, Callable, Optional, Sequence
 from logging import INFO, DEBUG, ERROR, WARNING, CRITICAL, Formatter as BaseFormatter, LogRecord
 
 
@@ -74,7 +74,7 @@ _DEFAULT_DISPATCH: Tuple[Callable[..., Any], ...] = (
 )
 
 
-class Formatter(BaseFormatter):
+class ConsoleFormatter(BaseFormatter):
     """
     Log formatter used in Tornado. Key features of this formatter are:
     * Color support when logging to a terminal that supports it.
@@ -112,6 +112,13 @@ class Formatter(BaseFormatter):
 
         self._fmt = fmt
         self._pprinter = PrettyPrinter(width=80, stream=_DEVNULL, compact=True)
+        self._pprinter_supported: Sequence[Any] = _DEFAULT_DISPATCH
+
+        # _dispatch is cpython specifc
+        pprint_dispatch = getattr(self._pprinter, "_dispatch", None)
+        if isinstance(pprint_dispatch, dict) and len(pprint_dispatch) > 0:
+            self._pprinter_supported = tuple(pprint_dispatch.values())
+
         if supports_color is None:
             self._colors = None
             self._normal = ""
@@ -119,15 +126,13 @@ class Formatter(BaseFormatter):
             self._colors, self._normal = supports_color
 
     def format(self, record: LogRecord) -> str:
-        # _dispatch is cpython specifc
-        pprint_supported = getattr(self._pprinter, "_dispatch", _DEFAULT_DISPATCH)
         try:
             message = str(record.msg)
             if isinstance(record.args, tuple):
                 message = message % tuple(
                     (
                         self._pprinter.pformat(arg)
-                        if type(object).__repr__ in pprint_supported
+                        if type(arg).__repr__ in self._pprinter_supported
                         else arg
                     )
                     for arg in record.args
@@ -136,7 +141,7 @@ class Formatter(BaseFormatter):
                 message = message % {
                     name: (
                         self._pprinter.pformat(arg)
-                        if type(object).__repr__ in pprint_supported
+                        if type(arg).__repr__ in self._pprinter_supported
                         else arg
                     )
                     for name, arg in record.args.items()
@@ -156,7 +161,7 @@ class Formatter(BaseFormatter):
             color_info["color"] = ""
             color_info["end_color"] = ""
 
-        formatted = (self._fmt if self._fmt else self.__class__.DEFAULT_FORMAT) % {
+        formatted = (self._fmt if self._fmt else type(self).DEFAULT_FORMAT) % {
             **record.__dict__,
             **color_info,
         }
@@ -175,4 +180,4 @@ class Formatter(BaseFormatter):
         return formatted.replace("\n", "\n    ")
 
 
-__all__ = ("Formatter",)
+__all__ = ("ConsoleFormatter",)

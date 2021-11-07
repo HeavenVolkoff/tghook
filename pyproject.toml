@@ -36,6 +36,7 @@ cryptography = "^35.0.0"
 # Optional dependencies
 typed-argument-parser = { version = "^1.7.1", optional = true }
 yt-dlp = { version = "2021.*,!=2021.10.22", optional = true }
+orjson = "^3.6.4"
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.910"

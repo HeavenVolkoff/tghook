@@ -8,7 +8,7 @@
       "justMyCode": false,
       "stopOnEntry": false,
       "program": "tghook",
-      "args": ["-i", "url_to_video", "BOT_TOKEN"],
+      "args": ["-vv", "-i", "url_to_video", "--external-host", "HOST", "BOT_TOKEN"],
       "linux": {
         "python": "${workspaceFolder}/.venv/bin/python"
       },

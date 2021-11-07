@@ -16,7 +16,7 @@ from logging import INFO, WARNING, Logger, StreamHandler, captureWarnings
 from logging.handlers import RotatingFileHandler
 
 # Project
-from ._formatter import Formatter
+from ._console_formatter import ConsoleFormatter
 
 _DEFAULT_LOG_PATH = "./logs"
 _MAX_LOG_FILE_SIZE = (
@@ -27,7 +27,7 @@ _MAX_LOG_FILE_COUNT = 10
 # Setup root logger basic config
 Logger.root.setLevel(INFO if __debug__ else WARNING)
 _stderr_stream_handler = StreamHandler()
-_stderr_stream_handler.setFormatter(Formatter())
+_stderr_stream_handler.setFormatter(ConsoleFormatter())
 Logger.root.addHandler(_stderr_stream_handler)
 
 # Configure warning to be show using the logging infraestructure
@@ -76,7 +76,7 @@ def get_logger(
         )
 
         # TODO: Replace with a json formatter
-        rfh.setFormatter(Formatter(colors=None))
+        rfh.setFormatter(ConsoleFormatter(colors=None))
 
         log.addHandler(rfh)
 

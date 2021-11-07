@@ -11,11 +11,13 @@ You should have received a copy of the GNU General Public License along with thi
 
 # Internal
 import ssl
-import json
 from typing import Any, Dict, Optional
 from urllib.error import URLError, HTTPError
 from urllib.parse import quote, urljoin
 from urllib.request import Request, urlopen
+
+# External
+import orjson
 
 # Project
 from ..logger import get_logger
@@ -78,8 +80,8 @@ def request_telegram(
             context=ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH),
         ) as req:
             try:
-                res = json.loads(req.read().decode("utf-8"))
-            except Exception as exc:
+                res = orjson.loads(req.read())
+            except orjson.JSONEncodeError as exc:
                 raise RuntimeError(f"Failed to parse Telegram response for {method}") from exc
 
             if not res.get("ok", False):
