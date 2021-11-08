@@ -10,22 +10,26 @@ You should have received a copy of the GNU General Public License along with thi
 """
 
 # Internal
-from os import path, makedirs
+from os import environ
 from typing import Union, Optional
-from logging import INFO, WARNING, Logger, StreamHandler, captureWarnings
+from logging import DEBUG, Logger, StreamHandler, captureWarnings
+from pathlib import Path
+from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
 # Project
+from ._json_formatter import JSONFormatter
 from ._console_formatter import ConsoleFormatter
 
-_DEFAULT_LOG_PATH = "./logs"
+_LOG_NAME = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S_%f")
+_DEFAULT_LOG_PATH = Path(environ.get("LOG_PATH", "./logs"))
 _MAX_LOG_FILE_SIZE = (
     (1024 * 1024) if __debug__ else (10 * 1024 * 1024)
 )  # 1MB for production and 10MB for debug
 _MAX_LOG_FILE_COUNT = 10
 
 # Setup root logger basic config
-Logger.root.setLevel(INFO if __debug__ else WARNING)
+Logger.root.setLevel(DEBUG)
 _stderr_stream_handler = StreamHandler()
 _stderr_stream_handler.setFormatter(ConsoleFormatter())
 Logger.root.addHandler(_stderr_stream_handler)
@@ -41,13 +45,14 @@ def set_level(level: Union[str, int]) -> None:
         level: Level to be used.
 
     """
-    Logger.root.setLevel(level)
+    for handler in Logger.root.handlers:
+        handler.setLevel(level)
 
 
 def get_logger(
     name: str,
     *,
-    log_path: Optional[str] = _DEFAULT_LOG_PATH,
+    log_path: Optional[Path] = _DEFAULT_LOG_PATH,
     file_size_limit: int = _MAX_LOG_FILE_SIZE,
     file_count_limit: int = _MAX_LOG_FILE_COUNT,
 ) -> Logger:
@@ -65,23 +70,22 @@ def get_logger(
     log = Logger.root.getChild(name)
 
     if log_path is not None:
-        if not path.exists(log_path):
-            makedirs(log_path)
+        if log_path.exists():
+            if not log_path.is_dir():
+                raise ValueError("log_path must point to a directory")
+        else:
+            log_path.mkdir(parents=True, exist_ok=True)
 
         rfh = RotatingFileHandler(
-            filename=path.join(log_path, f"{name}.log"),
+            filename=log_path / f"{_LOG_NAME}.jsonl",
             encoding="utf8",
             maxBytes=file_size_limit,
             backupCount=file_count_limit,
         )
 
-        # TODO: Replace with a json formatter
-        rfh.setFormatter(ConsoleFormatter(colors=None))
+        rfh.setFormatter(JSONFormatter())
 
         log.addHandler(rfh)
-
-    # Ensure log is an antenna log
-    assert isinstance(log, Logger)
 
     return log
 

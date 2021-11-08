@@ -9,8 +9,8 @@ Licensed under:
 import os
 import sys
 from pprint import PrettyPrinter
-from typing import Any, Dict, Tuple, AnyStr, Callable, Optional, Sequence
-from logging import INFO, DEBUG, ERROR, WARNING, CRITICAL, Formatter as BaseFormatter, LogRecord
+from typing import Any, Dict, Tuple, AnyStr, Literal, Callable, Optional, Sequence
+from logging import INFO, DEBUG, ERROR, WARNING, CRITICAL, Formatter, LogRecord
 
 
 def _stderr_supports_color(
@@ -74,7 +74,7 @@ _DEFAULT_DISPATCH: Tuple[Callable[..., Any], ...] = (
 )
 
 
-class ConsoleFormatter(BaseFormatter):
+class ConsoleFormatter(Formatter):
     """
     Log formatter used in Tornado. Key features of this formatter are:
     * Color support when logging to a terminal that supports it.
@@ -104,21 +104,23 @@ class ConsoleFormatter(BaseFormatter):
         self,
         fmt: str = DEFAULT_FORMAT,
         datefmt: str = DEFAULT_DATE_FORMAT,
+        style: Literal["%", "{", "$"] = "%",
+        validate: bool = True,
         colors: Optional[Dict[int, int]] = DEFAULT_COLORS,
     ) -> None:
-        super().__init__(datefmt=datefmt)
+        super().__init__(fmt, datefmt, style, validate)
 
-        supports_color = _stderr_supports_color(colors)
-
-        self._fmt = fmt
+        # Initialize pprinter instance
         self._pprinter = PrettyPrinter(width=80, stream=_DEVNULL, compact=True)
         self._pprinter_supported: Sequence[Any] = _DEFAULT_DISPATCH
-
-        # _dispatch is cpython specifc
-        pprint_dispatch = getattr(self._pprinter, "_dispatch", None)
+        pprint_dispatch = getattr(
+            self._pprinter, "_dispatch", None
+        )  # _dispatch is cpython specifc
         if isinstance(pprint_dispatch, dict) and len(pprint_dispatch) > 0:
             self._pprinter_supported = tuple(pprint_dispatch.values())
 
+        # Check for color support and initialize utility structures
+        supports_color = _stderr_supports_color(colors)
         if supports_color is None:
             self._colors = None
             self._normal = ""
