@@ -11,11 +11,13 @@ You should have received a copy of the GNU General Public License along with thi
 
 # Internal
 import os
+import re
 import sys
-from typing import List, Union, Literal, NoReturn, Optional
+import shlex
+from typing import Union, Literal, NoReturn, Optional, Sequence
 from logging import INFO, WARN, DEBUG
 from argparse import ArgumentError
-from ipaddress import IPv4Address, AddressValueError
+from ipaddress import IPv4Address, IPv6Address, AddressValueError
 
 # External
 from tap import Tap
@@ -24,8 +26,19 @@ from tghook import EXTERNAL_HOST_TYPE, __summary__, __version__, start_server
 from tghook.logger import set_level
 from tghook.example import IMPLEMENTATIONS
 
+DOMAIN_REGEX = re.compile(
+    # Courtesy of https://github.com/kvesteri/validators/blob/ad231676892d144250673d264ba459b2e860478e/validators/domain.py#L6-L9
+    # MIT Licensed, Copyright (c) 2013-2014 Konsta Vesterinen
+    r"^(?:[a-zA-Z0-9]"  # First character of the domain
+    r"(?:[a-zA-Z0-9-_]{0,61}[A-Za-z0-9])?\.)"  # Sub domain + hostname
+    r"+[A-Za-z0-9][A-Za-z0-9-_]{0,61}"  # First 61 characters of the gTLD
+    r"[A-Za-z]$"  # Last character of the gTLD
+)
 
-def _to_ip_or_host(hostname: Optional[str]) -> Union[str, None, IPv4Address]:
+
+def _to_ip_or_host(
+    hostname: Union[str, None, IPv4Address, IPv6Address]
+) -> Union[str, None, IPv4Address, IPv6Address]:
     """Parse argument into IPv4Address or leave it as is for hostnames
 
     Args:
@@ -35,12 +48,21 @@ def _to_ip_or_host(hostname: Optional[str]) -> Union[str, None, IPv4Address]:
         IP or Hostname
 
     """
-    if hostname is None:
+    if hostname is None or isinstance(hostname, (IPv4Address, IPv6Address)):
         return hostname
+
     try:
         return IPv4Address(hostname)
     except AddressValueError:
-        return hostname
+        try:
+            return IPv6Address(hostname)
+        except AddressValueError:
+            pass
+
+    if not DOMAIN_REGEX.match(hostname.encode("idna").decode("ascii")):
+        raise ValueError(f"Hostname should be a valid domain name")
+
+    return hostname
 
 
 class ArgumentParser(Tap):
@@ -57,15 +79,49 @@ class ArgumentParser(Tap):
     """Alternative name to be used as server hostname, when external_host is an IPv4 address."""
 
     def configure(self) -> None:
+        # Load arguments from environment variables
+        environ_config = []
+        for variable in self.class_variables:
+            envvar = f"TGHOOK_{variable.upper()}"
+            if envvar in os.environ and os.environ[envvar]:
+                if self._underscores_to_dashes:
+                    variable.replace("_", "-")
+                environ_config.append(f"--{variable}={shlex.quote(os.environ[envvar])}")
+        if len(environ_config) > 0:
+            self.args_from_configs.insert(0, " ".join(environ_config))
+
+        # More advanced argparse configurations
         self.add_argument("bot_key")
         self.add_argument("-i", "--implementation")
         self.add_argument("--verbose", "-v", action="count")
-        self.add_argument("--external_host", type=_to_ip_or_host)
         self.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
+    def process_args(self) -> None:
+        external_host = _to_ip_or_host(self.external_host)
 
-def main(raw_args: List[str] = sys.argv[1:]) -> NoReturn:
+        if isinstance(external_host, IPv6Address) or (
+            isinstance(_to_ip_or_host(self.host), IPv6Address) and external_host is None
+        ):
+            raise ValueError(
+                "Host can't be an IPv6Address, because Telegram doesn't support IPv6 webhooks"
+            )
+
+        self.external_host = external_host
+
+
+def main(raw_args: Sequence[str] = sys.argv[1:]) -> NoReturn:
     arg_parser = ArgumentParser(underscores_to_dashes=True, description=__summary__)
+
+    # Workaround TAP using simple split instead of shlex.split in args_from_configs
+    raw_args = [
+        *(
+            arg
+            for args_from_config in arg_parser.args_from_configs
+            for arg in shlex.split(args_from_config)
+        ),
+        *raw_args,
+    ]
+    arg_parser.args_from_configs = []
 
     try:
         args = arg_parser.parse_args(raw_args)
