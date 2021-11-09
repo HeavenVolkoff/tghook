@@ -1,23 +1,4 @@
 [[package]]
-name = "antenna.security"
-version = "2.0.0rc1"
-description = ""
-category = "main"
-optional = false
-python-versions = "~=3.6"
-develop = false
-
-[package.extras]
-dev = ["twine", "black", "isort (>=5.0,<6.0)", "venvtools"]
-tests = ["mypy"]
-
-[package.source]
-type = "git"
-url = "https://gitlab.com/VitorVasconcellos/antenna.security.git"
-reference = "master"
-resolved_reference = "6c872d77c260d41c272b0d1c33276b418a714d73"
-
-[[package]]
 name = "anyio"
 version = "3.3.4"
 description = "High level compatibility layer for multiple asynchronous event loop implementations"
@@ -276,6 +257,21 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "importlib-resources"
+version = "5.4.0"
+description = "Read resources from Python packages"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+zipp = {version = ">=3.1.0", markers = "python_version < \"3.10\""}
+
+[package.extras]
+docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
+testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "pytest-black (>=0.3.7)", "pytest-mypy"]
+
+[[package]]
 name = "inflect"
 version = "5.3.0"
 description = "Correctly generate plurals, singular nouns, ordinals, indefinite articles; convert numbers to words"
@@ -300,7 +296,7 @@ six = "*"
 
 [[package]]
 name = "isort"
-version = "5.10.0"
+version = "5.10.1"
 description = "A Python utility / library to sort Python imports."
 category = "dev"
 optional = false
@@ -613,6 +609,20 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "secure-context"
+version = "2.0.0"
+description = "Utilities for creation of SSL/TLS security contexts for servers and clients"
+category = "main"
+optional = false
+python-versions = "^3.6"
+
+[package.dependencies]
+importlib_resources = {version = "*", markers = "python_version <= \"3.9\""}
+
+[package.source]
+type = "url"
+url = "https://gitlab.com/VitorVasconcellos/secure_context/-/archive/master/secure_context-master.tar.gz"
+[[package]]
 name = "semver"
 version = "2.13.0"
 description = "Python helper for Semantic Versioning (http://semver.org/)"
@@ -726,16 +736,27 @@ mutagen = "*"
 pycryptodomex = "*"
 websockets = "*"
 
+[[package]]
+name = "zipp"
+version = "3.6.0"
+description = "Backport of pathlib-compatible object wrapper for zip files"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.extras]
+docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
+testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
+
 [extras]
 cmd = ["typed-argument-parser", "yt-dlp"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "b6c212363fa79547edef7cf218f9571db8ee90fb7112d8ad587c352dcb92fcf1"
+content-hash = "4ec8b55a16ceb5a5de658428c6f4dc78fea41d9c200d566d3de0481ed12f0e6b"
 
 [metadata.files]
-"antenna.security" = []
 anyio = [
     {file = "anyio-3.3.4-py3-none-any.whl", hash = "sha256:4fd09a25ab7fa01d34512b7249e366cd10358cdafc95022c7ff8c8f8a5026d66"},
     {file = "anyio-3.3.4.tar.gz", hash = "sha256:67da67b5b21f96b9d3d65daa6ea99f5d5282cb09f50eb4456f8fb51dffefc3ff"},
@@ -877,6 +898,10 @@ idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
     {file = "idna-3.3.tar.gz", hash = "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"},
 ]
+importlib-resources = [
+    {file = "importlib_resources-5.4.0-py3-none-any.whl", hash = "sha256:33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45"},
+    {file = "importlib_resources-5.4.0.tar.gz", hash = "sha256:d756e2f85dd4de2ba89be0b21dba2a3bbec2e871a42a3a16719258a11f87506b"},
+]
 inflect = [
     {file = "inflect-5.3.0-py3-none-any.whl", hash = "sha256:42560be16af702a21d43d59427f276b5aed79efb1ded9b713468c081f4353d10"},
     {file = "inflect-5.3.0.tar.gz", hash = "sha256:41a23f6788962e9775e40e2ecfb1d6455d02de315022afeedd3c5dc070019d73"},
@@ -886,8 +911,8 @@ isodate = [
     {file = "isodate-0.6.0.tar.gz", hash = "sha256:2e364a3d5759479cdb2d37cce6b9376ea504db2ff90252a2e5b7cc89cc9ff2d8"},
 ]
 isort = [
-    {file = "isort-5.10.0-py3-none-any.whl", hash = "sha256:1a18ccace2ed8910bd9458b74a3ecbafd7b2f581301b0ab65cfdd4338272d76f"},
-    {file = "isort-5.10.0.tar.gz", hash = "sha256:e52ff6d38012b131628cf0f26c51e7bd3a7c81592eefe3ac71411e692f1b9345"},
+    {file = "isort-5.10.1-py3-none-any.whl", hash = "sha256:6f62d78e2f89b4500b080fe3a81690850cd254227f27f75c3a0c491a1f351ba7"},
+    {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 jinja2 = [
     {file = "Jinja2-3.0.2-py3-none-any.whl", hash = "sha256:8569982d3f0889eed11dd620c706d39b60c36d6d25843961f33f77fb6bc6b20c"},
@@ -1264,6 +1289,7 @@ rfc3986 = [
     {file = "ruamel.yaml.clib-0.2.6-cp39-cp39-win_amd64.whl", hash = "sha256:825d5fccef6da42f3c8eccd4281af399f21c02b32d98e113dbc631ea6a6ecbc7"},
     {file = "ruamel.yaml.clib-0.2.6.tar.gz", hash = "sha256:4ff604ce439abb20794f05613c374759ce10e3595d1867764dd1ae675b85acbd"},
 ]
+secure-context = []
 semver = [
     {file = "semver-2.13.0-py2.py3-none-any.whl", hash = "sha256:ced8b23dceb22134307c1b8abfa523da14198793d9787ac838e70e29e77458d4"},
     {file = "semver-2.13.0.tar.gz", hash = "sha256:fa0fe2722ee1c3f57eac478820c3a5ae2f624af8264cbdf9000c980ff7f75e3f"},
@@ -1335,4 +1361,8 @@ websockets = [
 yt-dlp = [
     {file = "yt-dlp-2021.10.10.tar.gz", hash = "sha256:cc96211e8e55ebbb48d2e6609c0d0942507eb5471b2ce74e38f7b95f8d70a4e7"},
     {file = "yt_dlp-2021.10.10-py2.py3-none-any.whl", hash = "sha256:6dbf58013226b5400b77188dcd75038685a42f505d143d531156045f96af4440"},
+]
+zipp = [
+    {file = "zipp-3.6.0-py3-none-any.whl", hash = "sha256:9fe5ea21568a0a70e50f273397638d39b03353731e6cbbb3fd8502a33fec40bc"},
+    {file = "zipp-3.6.0.tar.gz", hash = "sha256:71c644c5369f4a6e07636f0aa966270449561fcea2e3d6747b8d23efaa9d7832"},
 ]

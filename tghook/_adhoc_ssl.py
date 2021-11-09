@@ -17,7 +17,7 @@ from tempfile import NamedTemporaryFile
 from contextlib import ExitStack
 
 # External
-import antenna.security
+import secure_context
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.backends import default_backend
@@ -110,7 +110,7 @@ def create_server_ssl_context(cert: bytes, key: bytes) -> SSLContext:
         key_temp_file.flush()
         key_file = key_temp_file.name
 
-        return antenna.security.create_server_ssl_context(
+        return secure_context.create_server_ssl_context(
             cert_file, key_file, protocols=["http/1.1"]
         )
 

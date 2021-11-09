@@ -72,7 +72,7 @@ def get_logger(
     if log_path is not None:
         if log_path.exists():
             if not log_path.is_dir():
-                raise ValueError("log_path must point to a directory")
+                raise NotADirectoryError("log_path must point to a directory")
         else:
             log_path.mkdir(parents=True, exist_ok=True)
 
