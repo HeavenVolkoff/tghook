@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "tghook"
 readme = "README.md"
-version = "0.0.7"
+version = "0.0.8"
 authors = ["Vítor Vasconcellos <vasconcellos.dev@gmail.com>"]
 license = "GPL-2.0-or-later"
 packages = [{ include = "tghook/**/*.py" }, { include = "tghook/py.typed" }]

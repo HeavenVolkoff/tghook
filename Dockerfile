@@ -52,4 +52,4 @@ VOLUME /var/log/tghook
 
 EXPOSE 8443
 
-CMD ["/usr/local/bin/tghook"]
+ENTRYPOINT ["/usr/local/bin/tghook"]

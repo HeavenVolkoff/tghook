@@ -85,7 +85,7 @@ class ArgumentParser(Tap):
             envvar = f"TGHOOK_{variable.upper()}"
             if envvar in os.environ and os.environ[envvar]:
                 if self._underscores_to_dashes:
-                    variable.replace("_", "-")
+                    variable = variable.replace("_", "-")
                 environ_config.append(f"--{variable}={shlex.quote(os.environ[envvar])}")
         if len(environ_config) > 0:
             self.args_from_configs.insert(0, " ".join(environ_config))
