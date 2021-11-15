@@ -4,11 +4,7 @@ readme = "README.md"
 version = "0.0.7"
 authors = ["Vítor Vasconcellos <vasconcellos.dev@gmail.com>"]
 license = "GPL-2.0-or-later"
-packages = [
-  { include = "tghook/**/*.py" },
-  { include = "tghook/**/*.pyi" },
-  { include = "tghook/py.typed" },
-]
+packages = [{ include = "tghook/**/*.py" }, { include = "tghook/py.typed" }]
 keywords = ["telegram", "bot", "library", "webhook", "tghook"]
 repository = "https://github.com/HeavenVolkoff/tghook"
 classifiers = [
@@ -35,13 +31,13 @@ tghook = 'tghook.__main__:main'
 [tool.poetry.dependencies]
 python = "^3.9"
 # Hard dependencies
+orjson = "^3.6.4"
 pydantic = "^1.8.2"
 cryptography = "^35.0.0"
+secure-context = "^2.0.0"
 # Optional dependencies
-typed-argument-parser = { version = "^1.7.1", optional = true }
 yt-dlp = { version = "2021.*,!=2021.10.22", optional = true }
-orjson = "^3.6.4"
-secure-context = { url = "https://gitlab.com/VitorVasconcellos/secure_context/-/archive/master/secure_context-master.tar.gz" }
+typed-argument-parser = { version = "^1.7.1", optional = true }
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.910"
