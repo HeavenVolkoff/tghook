@@ -39,6 +39,9 @@ RUN find /root/.local -type d -name '__pycache__' | xargs -r rm -r
 
 # Rename site-packages for copying to global path
 RUN find /root/.local/lib -type d -name 'site-packages' | xargs -rn1 dirname | xargs -rI{} mv {}/site-packages {}/dist-packages
+RUN find /root/.local -type f -exec chmod 644 {} +
+RUN find /root/.local -type d -exec chmod 755 {} +
+RUN chmod 755 -R /root/.local/bin
 
 # --
 
