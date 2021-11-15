@@ -20,9 +20,6 @@ FROM base AS build-env
 ADD https://bootstrap.pypa.io/get-pip.py /src/get-pip.py
 RUN python /src/get-pip.py
 
-# Install poetry
-RUN pip install poetry
-
 # Copy project files
 RUN mkdir -p /src/tghook
 COPY ./tghook /src/tghook/tghook
@@ -31,10 +28,10 @@ COPY ./poetry.lock ./pyproject.toml ./README.md /src/tghook/
 WORKDIR /src/tghook
 
 # Build project
-RUN poetry build -f wheel
+RUN pip wheel --no-deps --use-pep517 .
 
 # Install project in user local home
-RUN find dist/ -type f -name 'tghook-*.whl' -exec python -m pip install --ignore-installed --user {}[cmd] \;
+RUN find ./ -type f -name 'tghook-*.whl' -exec python -m pip install --upgrade --ignore-installed --user {}[cmd] \;
 
 # Clear cache
 RUN find /root/.local -type f -name '*.pyc' -delete
