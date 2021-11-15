@@ -48,6 +48,7 @@ RUN chmod 755 -R /root/.local/bin
 FROM base
 
 COPY --from=build-env /root/.local/ /usr/local/
+COPY entrypoint.sh /bin/
 
 ENV LOG_PATH=/var/log/tghook
 
@@ -55,4 +56,11 @@ VOLUME /var/log/tghook
 
 EXPOSE 8443
 
-ENTRYPOINT ["/usr/local/bin/tghook"]
+ENTRYPOINT [ "/bin/entrypoint.sh" ]
+
+LABEL org.opencontainers.image.title="tghook" \
+    org.opencontainers.image.authors="Vítor Vasconcellos <support@vasconcellos.casa>" \
+    org.opencontainers.image.revision="1" \
+    org.opencontainers.image.licenses="GPL-2.0-or-later" \
+    org.opencontainers.image.description="A simple library for creating telegram bots servers that exclusively use webhook for communication" \
+    version.command="--version | awk -F' ' '{ print $2 }'"

@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "tghook"
 readme = "README.md"
-version = "0.0.8"
+version = "0.0.9"
 authors = ["Vítor Vasconcellos <vasconcellos.dev@gmail.com>"]
 license = "GPL-2.0-or-later"
 packages = [{ include = "tghook/**/*.py" }, { include = "tghook/py.typed" }]
@@ -17,7 +17,7 @@ classifiers = [
   "Intended Audience :: Developers",
   "Development Status :: 3 - Alpha",
 ]
-description = "A simple telegram bot that resolves video urls using yt-dlp"
+description = "A simple library for creating telegram bots servers that exclusively use webhook for communication"
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/HeavenVolkoff/tghook/issues"

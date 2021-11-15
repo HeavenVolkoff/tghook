@@ -76,12 +76,16 @@ def get_logger(
         else:
             log_path.mkdir(parents=True, exist_ok=True)
 
-        rfh = RotatingFileHandler(
-            filename=log_path / f"{_LOG_NAME}.jsonl",
-            encoding="utf8",
-            maxBytes=file_size_limit,
-            backupCount=file_count_limit,
-        )
+        try:
+            rfh = RotatingFileHandler(
+                filename=log_path / f"{_LOG_NAME}.jsonl",
+                encoding="utf8",
+                maxBytes=file_size_limit,
+                backupCount=file_count_limit,
+            )
+        except OSError as exc:
+            Logger.root.warn("Failed to configure RotatingFileHandler for logger", exc_info=exc)
+            return log
 
         rfh.setFormatter(JSONFormatter())
 
