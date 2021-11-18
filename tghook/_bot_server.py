@@ -11,6 +11,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 # Internal
 import signal
+from ssl import SSLContext
 from sys import exc_info
 from typing import Any, Type, Tuple, Union, Literal, Callable, Optional
 from hashlib import md5
@@ -218,6 +219,7 @@ def start_server(
     bot_impl: Callable[[User, Update], Optional[RequestTypes]],
     bot_token: str,
     *,
+    ssl: Union[bool, SSLContext] = True,
     host: str = "0.0.0.0",
     port: int = 443,
     external_host: EXTERNAL_HOST_TYPE = None,
@@ -233,6 +235,8 @@ def start_server(
         external_port: External port where the bot server is exposed
 
     """
+    cert: Optional[bytes] = None
+
     logger.info("Starting Telegram bot server...")
 
     try:  # Retrieve bot information from Telegram API
@@ -257,21 +261,6 @@ def start_server(
     if external_port is None:
         external_port = port
 
-    # SSL/TLS self-signed certificate
-    if isinstance(external_host, IPv4Address):
-        if alternative_name is None:
-            alternative_name = f"{bot.first_name.lower()}.bot"
-
-        cert, key = generate_adhoc_ssl_pair(f"Telegram Bot: {bot.first_name}", alternative_name)
-    else:
-        if alternative_name is not None:
-            raise ValueError("Alternative Name can only be used when External Host is an IP")
-
-        cert, key = generate_adhoc_ssl_pair(f"Telegram Bot: {bot.first_name}", external_host)
-
-    # SSL/TLS context for HTTPS server
-    ssl_context = create_server_ssl_context(cert, key)
-
     with ExitStack() as stack:
         server = stack.enter_context(
             HTTPServer(
@@ -282,8 +271,31 @@ def start_server(
                 bot_token=bot_token,
             )
         )
-        # Wrap TCP socket with SSL/TLS to enable HTTPS support in the server
-        server.socket = ssl_context.wrap_socket(server.socket, server_side=True)
+
+        if ssl:  # Wrap TCP socket with SSL/TLS to enable HTTPS support in the server
+            if not isinstance(ssl, SSLContext):
+                # SSL/TLS self-signed certificate
+                if isinstance(external_host, IPv4Address):
+                    if alternative_name is None:
+                        alternative_name = f"{bot.first_name.lower()}.bot"
+
+                    cert, key = generate_adhoc_ssl_pair(
+                        f"Telegram Bot: {bot.first_name}", alternative_name
+                    )
+                else:
+                    if alternative_name is not None:
+                        raise ValueError(
+                            "Alternative Name can only be used when External Host is an IP"
+                        )
+
+                    cert, key = generate_adhoc_ssl_pair(
+                        f"Telegram Bot: {bot.first_name}", external_host
+                    )
+
+                ssl = create_server_ssl_context(cert, key)
+            server.socket = ssl.wrap_socket(server.socket, server_side=True)
+        elif not isinstance(external_host, str):
+            raise ValueError("Telegram requires webhooks to have ssl enabled")
 
         # Open server in a new thread
         server_thread = Thread(target=server.serve_forever)

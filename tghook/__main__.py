@@ -70,6 +70,7 @@ class ArgumentParser(Tap):
     implementation: Literal["url_to_video"]  # Which example bot implementation to use
     host: str = "0.0.0.0"  # Address which the bot server will bind
     port: int = 8443  # Port which the bot server will bind
+    no_ssl: bool = False  # Wether to enable TLS or not
     verbose: int = 0  # Verbosity level, Maximum is -vv
     external_host: Union[str, None, IPv4Address] = None
     """External name or IPv4 that will be resolved to the host where the bot server is running"""
@@ -97,14 +98,22 @@ class ArgumentParser(Tap):
         self.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     def process_args(self) -> None:
+        host = _to_ip_or_host(self.host)
+        assert host is not None
+
         external_host = _to_ip_or_host(self.external_host)
 
         if isinstance(external_host, IPv6Address) or (
-            isinstance(_to_ip_or_host(self.host), IPv6Address) and external_host is None
+            isinstance(host, IPv6Address) and external_host is None
         ):
             raise ValueError(
                 "Host can't be an IPv6Address, because Telegram doesn't support IPv6 webhooks"
             )
+
+        if self.no_ssl and not (
+            isinstance(external_host, str) or (external_host is None and isinstance(host, str))
+        ):
+            raise ValueError("Telegram requires webhooks to have ssl enabled")
 
         self.external_host = external_host
 
