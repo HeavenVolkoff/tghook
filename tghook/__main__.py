@@ -37,8 +37,8 @@ DOMAIN_REGEX = re.compile(
 
 
 def _to_ip_or_host(
-    hostname: Union[str, None, IPv4Address, IPv6Address]
-) -> Union[str, None, IPv4Address, IPv6Address]:
+    hostname: Union[str, IPv4Address, IPv6Address]
+) -> Union[str, IPv4Address, IPv6Address]:
     """Parse argument into IPv4Address or leave it as is for hostnames
 
     Args:
@@ -48,7 +48,7 @@ def _to_ip_or_host(
         IP or Hostname
 
     """
-    if hostname is None or isinstance(hostname, (IPv4Address, IPv6Address)):
+    if isinstance(hostname, (IPv4Address, IPv6Address)):
         return hostname
 
     try:
@@ -65,12 +65,25 @@ def _to_ip_or_host(
     return hostname
 
 
+def validate_external_host(raw: Union[str, None]) -> Union[str, None, IPv4Address]:
+    if raw is None:
+        return None
+
+    host = _to_ip_or_host(raw)
+    if isinstance(host, IPv6Address):
+        raise ValueError(
+            "--external-host can't be an IPv6Address. Telegram doesn't support IPv6 webhooks"
+        )
+
+    return host
+
+
 class ArgumentParser(Tap):
     bot_key: str  # Telegram API bot key
     implementation: Literal["url_to_video"]  # Which example bot implementation to use
     host: str = "0.0.0.0"  # Address which the bot server will bind
     port: int = 8443  # Port which the bot server will bind
-    no_ssl: bool = False  # Wether to enable TLS or not
+    no_ssl: bool = False  # Wether to disable TLS
     verbose: int = 0  # Verbosity level, Maximum is -vv
     external_host: Union[str, None, IPv4Address] = None
     """External name or IPv4 that will be resolved to the host where the bot server is running"""
@@ -96,41 +109,18 @@ class ArgumentParser(Tap):
         self.add_argument("-i", "--implementation")
         self.add_argument("--verbose", "-v", action="count")
         self.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+        self.add_argument("--external-host", type=validate_external_host)
 
     def process_args(self) -> None:
         host = _to_ip_or_host(self.host)
         assert host is not None
 
-        external_host = _to_ip_or_host(self.external_host)
-
-        if isinstance(external_host, IPv6Address) or (
-            isinstance(host, IPv6Address) and external_host is None
-        ):
-            raise ValueError(
-                "Host can't be an IPv6Address, because Telegram doesn't support IPv6 webhooks"
-            )
-
-        if self.no_ssl and not (
-            isinstance(external_host, str) or (external_host is None and isinstance(host, str))
-        ):
-            raise ValueError("Telegram requires webhooks to have ssl enabled")
-
-        self.external_host = external_host
+        if isinstance(host, IPv6Address) and self.external_host is None:
+            raise ValueError("--host only can be an IPv6Address when --external-host is defined")
 
 
 def main(raw_args: Sequence[str] = sys.argv[1:]) -> NoReturn:
     arg_parser = ArgumentParser(underscores_to_dashes=True, description=__summary__)
-
-    # Workaround TAP using simple split instead of shlex.split in args_from_configs
-    raw_args = [
-        *(
-            arg
-            for args_from_config in arg_parser.args_from_configs
-            for arg in shlex.split(args_from_config)
-        ),
-        *raw_args,
-    ]
-    arg_parser.args_from_configs = []
 
     try:
         args = arg_parser.parse_args(raw_args)
@@ -160,6 +150,7 @@ def main(raw_args: Sequence[str] = sys.argv[1:]) -> NoReturn:
         start_server(
             implementation,
             args.bot_key,
+            ssl=not args.no_ssl,
             host=args.host,
             port=args.port,
             external_host=external_host,

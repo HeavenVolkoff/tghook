@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License along with thi
 import signal
 from ssl import SSLContext
 from sys import exc_info
+from socket import socket
 from typing import Any, Type, Tuple, Union, Literal, Callable, Optional
 from hashlib import md5
 from ipaddress import IPv4Address, AddressValueError
@@ -196,17 +197,17 @@ class HTTPServer(ThreadingHTTPServer):
         super().__init__(server_address, RequestHandlerClass, bind_and_activate)
         self._request_handler_kwargs = request_handler_kwargs
 
-    # Pyright is wrong
-    def finish_request(  # type: ignore[reportIncompatibleMethodOverride]
+    def finish_request(
         self,
-        request: bytes,
+        request: Union[socket, Tuple[bytes, socket]],
         client_address: Union[Tuple[str, int], str],
     ) -> None:
         self.RequestHandlerClass(request, client_address, self, **self._request_handler_kwargs)
 
-    # Pyright is wrong
-    def handle_error(  # type: ignore[reportIncompatibleMethodOverride]
-        self, request: bytes, client_address: Union[Tuple[str, int], str]
+    def handle_error(
+        self,
+        request: Union[socket, Tuple[bytes, socket]],
+        client_address: Union[Tuple[str, int], str],
     ) -> None:
         logger.error(
             "Error occurred during processing of request from %s",
@@ -295,7 +296,10 @@ def start_server(
                 ssl = create_server_ssl_context(cert, key)
             server.socket = ssl.wrap_socket(server.socket, server_side=True)
         elif not isinstance(external_host, str):
-            raise ValueError("Telegram requires webhooks to have ssl enabled")
+            logger.warn(
+                "Telegram REQUIRES webhooks to have SSL enabled. "
+                "Only run with SSL disable if behind a reverse proxy with SSL termination"
+            )
 
         # Open server in a new thread
         server_thread = Thread(target=server.serve_forever)

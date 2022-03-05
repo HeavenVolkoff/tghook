@@ -46,7 +46,7 @@ def _stderr_supports_color(
                 return {
                     levelno: str(curses.tparm(fg_color, code), "ascii")
                     for levelno, code in colors.items()
-                }, str(curses.tigetstr("sgr0"), "ascii")
+                }, str(curses.tigetstr("sgr0") or b"", "ascii")
         except Exception:
             # If curses is not present (currently we'll only get here on windows),
             # assume hard-coded ANSI color codes.

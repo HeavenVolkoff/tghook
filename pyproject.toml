@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "tghook"
 readme = "README.md"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Vítor Vasconcellos <vasconcellos.dev@gmail.com>"]
 license = "GPL-2.0-or-later"
 packages = [{ include = "tghook/**/*.py" }, { include = "tghook/py.typed" }]
@@ -31,20 +31,20 @@ tghook = 'tghook.__main__:main'
 [tool.poetry.dependencies]
 python = "^3.9"
 # Hard dependencies
-orjson = "^3.6.4"
-pydantic = "^1.8.2"
-cryptography = "^35.0.0"
+orjson = "^3.6.7"
+pydantic = "^1.9.0"
+cryptography = "^36.0.0"
 secure-context = "^2.0.0"
 # Optional dependencies
-yt-dlp = { version = "2021.*,!=2021.10.22", optional = true }
-typed-argument-parser = { version = "^1.7.1", optional = true }
+yt-dlp = { version = "2022.*", optional = true }
+typed-argument-parser = { version = "^1.7.2", optional = true }
 
 [tool.poetry.dev-dependencies]
-mypy = "^0.910"
-black = "^21.10b0"
-isort = "^5.9.3"
-poethepoet = "^0.10.0"
-datamodel-code-generator = { extras = ["http"], version = "^0.11.14" }
+mypy = "^0.931"
+black = "^22.1.0"
+isort = "^5.10.1"
+poethepoet = "^0.13.1"
+datamodel-code-generator = { extras = ["http"], version = "^0.11.19" }
 
 [tool.poe.tasks]
 check = { shell = "mypy .; npx pyright" }
