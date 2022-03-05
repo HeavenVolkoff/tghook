@@ -4,13 +4,12 @@ FROM busybox:stable-musl as busybox
 
 FROM gcr.io/distroless/python3 AS base
 
-ENV PATH            /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ENV XDG_DATA_HOME   /data
-ENV XDG_CONFIG_HOME /config
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 COPY --from=busybox /bin/busybox /bin/busybox
 
-RUN ["/bin/busybox", "--install", "-s", "/usr/bin"]
+RUN ["/bin/busybox", "--install", "-s", "/bin"]
+RUN ln -s /bin/env /usr/bin/env
 
 # --
 
@@ -47,12 +46,17 @@ RUN chmod 755 -R /root/.local/bin
 
 FROM base
 
+ENV TZ=UTC \
+    PUID=1000 \
+    PGID=1000 \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    TMPDIR=/tmp \
+    LANGUAGE=en \
+    LOG_PATH=/var/log/tghook
+
 COPY --from=build-env /root/.local/ /usr/local/
-COPY entrypoint.sh /bin/
-
-RUN chmod +x /bin/entrypoint.sh
-
-ENV LOG_PATH=/var/log/tghook
+COPY --chmod=755 entrypoint.sh /bin/
 
 VOLUME /var/log/tghook
 

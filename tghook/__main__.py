@@ -66,7 +66,7 @@ def _to_ip_or_host(
 
 
 def validate_external_host(raw: Union[str, None]) -> Union[str, None, IPv4Address]:
-    if raw is None:
+    if not raw:
         return None
 
     host = _to_ip_or_host(raw)
