@@ -17,7 +17,7 @@ import shlex
 from typing import Union, Literal, NoReturn, Optional, Sequence
 from logging import INFO, WARN, DEBUG
 from argparse import ArgumentError
-from ipaddress import IPv4Address, IPv6Address, AddressValueError
+from ipaddress import IPv4Address, IPv6Address, ip_address
 
 # External
 from tap import Tap
@@ -52,17 +52,13 @@ def _to_ip_or_host(
         return hostname
 
     try:
-        return IPv4Address(hostname)
-    except AddressValueError:
-        try:
-            return IPv6Address(hostname)
-        except AddressValueError:
-            pass
+        # Ignore mypy incorrect typing
+        return ip_address(hostname)  # type: ignore[no-any-return]
+    except ValueError:
+        if not DOMAIN_REGEX.match(hostname.encode("idna").decode("ascii")):
+            raise ValueError(f"Hostname should be a valid domain name")
 
-    if not DOMAIN_REGEX.match(hostname.encode("idna").decode("ascii")):
-        raise ValueError(f"Hostname should be a valid domain name")
-
-    return hostname
+        return hostname
 
 
 def validate_external_host(raw: Union[str, None]) -> Union[str, None, IPv4Address]:

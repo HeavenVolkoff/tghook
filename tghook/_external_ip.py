@@ -31,7 +31,7 @@ def retrieve_external_ip() -> IPv4Address:
     """
     try:
         with urlopen(
-            "http://api.ipify.org/?format=json",
+            "https://api.ipify.org/?format=json",
             context=ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH),
         ) as req:
             try:

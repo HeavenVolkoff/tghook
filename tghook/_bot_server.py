@@ -16,7 +16,7 @@ from sys import exc_info
 from socket import socket
 from typing import Any, Type, Tuple, Union, Literal, Callable, Optional
 from hashlib import md5
-from ipaddress import IPv4Address, AddressValueError
+from ipaddress import IPv4Address
 from threading import Thread
 from contextlib import ExitStack
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -28,6 +28,7 @@ import orjson
 
 # Project
 from .logger import get_logger
+from ._header import parse_header_forwarded_for
 from .telegram import TELEGRAM_SUBNETS, get_me, set_webhook, delete_webhook
 from ._adhoc_ssl import generate_adhoc_ssl_pair, create_server_ssl_context
 from ._external_ip import retrieve_external_ip
@@ -118,12 +119,17 @@ class BotRequestHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            client_address = IPv4Address(self.client_address[0])
-        except AddressValueError:
-            # https://core.telegram.org/bots/webhooks#the-short-version
-            # https://datatracker.ietf.org/doc/html/rfc7540#section-9.1.2
-            self.send_error(421, explain="Telegram API only communicates with IPv4")
-            return
+            client_address = parse_header_forwarded_for(self.headers.get("Forwarded", ''))[0]
+            if not isinstance(client_address, IPv4Address):
+                raise ValueError('Telegram client must be a IPv4Address')
+        except ValueError:
+            try:
+                client_address = IPv4Address(self.client_address[0])
+            except ValueError:
+                # https://core.telegram.org/bots/webhooks#the-short-version
+                # https://datatracker.ietf.org/doc/html/rfc7540#section-9.1.2
+                self.send_error(421, explain="Telegram API only communicates with IPv4")
+                return
 
         if not any(client_address in subnet for subnet in TELEGRAM_SUBNETS):
             # TODO: Add logic for limiting clients that are outside telegram subnets and that send invalid data

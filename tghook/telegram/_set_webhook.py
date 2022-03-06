@@ -73,9 +73,10 @@ def set_webhook(
     if ip_address is not None:
         try:
             IPv4Address(url.hostname)
-            raise ValueError("IP SHOULD be None when webhook is already an ip address")
         except AddressValueError:
             pass
+        else:
+            raise ValueError("IP SHOULD be None when webhook is already an ip address")
 
         form_data.append(FormPart(name="ip_address", data=ip_address.compressed))
     if certificate is not None:
