@@ -24,7 +24,6 @@ adduser --system --disabled-password \
   --gecos 'Telegram bot system account' \
   --ingroup tghook \
   tghook
-passwd -l tghook
 
 if [ -n "${TZ:-}" ]; then
   echo "Set Timezone to $TZ"
@@ -37,4 +36,4 @@ echo "Fix telegram bot's directories permissions"
 mkdir -p "$LOG_PATH"
 chown -R "${PUID}:${PGID}" "$LOG_PATH"
 
-set -- su tghook -s /usr/local/bin/tghook -- "$@"
+exec su tghook -s /usr/local/bin/tghook -- "$@"
