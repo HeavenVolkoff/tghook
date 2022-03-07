@@ -11,7 +11,8 @@ You should have received a copy of the GNU General Public License along with thi
 
 # Internal
 import ssl
-from ipaddress import IPv4Address, AddressValueError
+from typing import Iterable, Union, Sequence
+from ipaddress import IPv4Address, IPv6Address, AddressValueError
 from urllib.error import URLError, HTTPError
 from urllib.request import urlopen
 
@@ -54,4 +55,30 @@ def retrieve_external_ip() -> IPv4Address:
         raise RuntimeError(f"Failed to reach ipify due to: {exc.reason}") from exc
 
 
-__all__ = ("retrieve_external_ip",)
+def retrieve_first_public_ip(
+    addresses: Iterable[Union[str, IPv4Address, IPv6Address]]
+) -> Union[IPv4Address, IPv6Address]:
+    try:
+        return next(
+            (
+                address.ipv4_mapped or address.sixtofour or address
+                if isinstance(address, IPv6Address)
+                else address
+            )
+            for address in addresses
+            if not (
+                isinstance(address, str)
+                or address.is_link_local
+                or address.is_loopback
+                or address.is_multicast
+                or address.is_private
+                or address.is_reserved
+                or address.is_unspecified
+                or (isinstance(address, IPv6Address) and address.is_site_local)
+            )
+        )
+    except StopIteration:
+        raise ValueError("No public ip found")
+
+
+__all__ = ("retrieve_external_ip", "retrieve_first_public_ip")

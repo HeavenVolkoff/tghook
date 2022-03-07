@@ -13,7 +13,6 @@ You should have received a copy of the GNU General Public License along with thi
 import os
 import re
 import sys
-import shlex
 from typing import Union, Literal, NoReturn, Optional, Sequence
 from logging import INFO, WARN, DEBUG
 from argparse import ArgumentError
@@ -90,15 +89,23 @@ class ArgumentParser(Tap):
 
     def configure(self) -> None:
         # Load arguments from environment variables
-        environ_config = []
-        for variable in self.class_variables:
-            envvar = f"TGHOOK_{variable.upper()}"
-            if envvar in os.environ and os.environ[envvar]:
-                if self._underscores_to_dashes:
-                    variable = variable.replace("_", "-")
-                environ_config.append(f"--{variable}={shlex.quote(os.environ[envvar])}")
-        if len(environ_config) > 0:
-            self.args_from_configs.insert(0, " ".join(environ_config))
+        for key, value in os.environ.items():
+            *prefix, variable = key.partition("TGHOOK_")
+            if (
+                tuple(prefix) == ("", "TGHOOK_")
+                and (variable := variable.lower()) in self.class_variables
+            ):
+                setattr(
+                    self,
+                    key,
+                    ""
+                    if (
+                        type(getattr(self, key, None)) is bool
+                        and value == "0"
+                        or value.lower() == "false"
+                    )
+                    else value,
+                )
 
         # More advanced argparse configurations
         self.add_argument("bot_key")

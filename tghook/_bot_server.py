@@ -31,7 +31,7 @@ from .logger import get_logger
 from ._header import parse_header_forwarded_for
 from .telegram import TELEGRAM_SUBNETS, get_me, set_webhook, delete_webhook
 from ._adhoc_ssl import generate_adhoc_ssl_pair, create_server_ssl_context
-from ._external_ip import retrieve_external_ip
+from ._external_ip import retrieve_external_ip, retrieve_first_public_ip
 from .telegram.types import User, Update, RequestTypes
 from ._multipart_form_data import MIME_JSON
 
@@ -119,9 +119,12 @@ class BotRequestHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            client_address = parse_header_forwarded_for(self.headers.get("Forwarded", ''))[0]
+            client_address = retrieve_first_public_ip(
+                # https://adam-p.ca/blog/2022/03/x-forwarded-for/
+                reversed(parse_header_forwarded_for(self.headers.get("Forwarded", "")))
+            )
             if not isinstance(client_address, IPv4Address):
-                raise ValueError('Telegram client must be a IPv4Address')
+                raise ValueError("Telegram client must be a IPv4Address")
         except ValueError:
             try:
                 client_address = IPv4Address(self.client_address[0])
