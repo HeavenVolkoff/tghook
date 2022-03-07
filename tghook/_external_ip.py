@@ -11,7 +11,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 # Internal
 import ssl
-from typing import Iterable, Union, Sequence
+from typing import Union, Iterable, Sequence
 from ipaddress import IPv4Address, IPv6Address, AddressValueError
 from urllib.error import URLError, HTTPError
 from urllib.request import urlopen

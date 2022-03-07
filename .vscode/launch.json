@@ -1,21 +1,22 @@
 {
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: tghook",
+      "env": {
+        "TGHOOK_NO_SSL": "1",
+        "TGHOOK_EXTERNAL_PORT": "443",
+        "TGHOOK_EXTERNAL_HOST": "tghook.example.com",
+        "TGHOOK_IMPLEMENTATION": "url_to_video"
+      },
+      "args": ["KEYKEYKEYKEYKEYKEY"],
+      "name": "Python: Module",
       "type": "python",
       "request": "launch",
-      "justMyCode": false,
-      "stopOnEntry": false,
-      "program": "tghook",
-      "args": ["-vv", "-i", "url_to_video", "--external-host", "HOST", "BOT_TOKEN"],
-      "linux": {
-        "python": "${workspaceFolder}/.venv/bin/python"
-      },
-      "windows": {
-        "python": "${workspaceFolder}/.venv/Scripts/python.exe"
-      },
-      "console": "integratedTerminal"
+      "module": "tghook",
+      "justMyCode": false
     }
   ]
 }

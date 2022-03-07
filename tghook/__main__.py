@@ -97,13 +97,9 @@ class ArgumentParser(Tap):
             ):
                 setattr(
                     self,
-                    key,
-                    ""
-                    if (
-                        type(getattr(self, key, None)) is bool
-                        and value == "0"
-                        or value.lower() == "false"
-                    )
+                    variable,
+                    (False if value == "0" or value.lower() == "false" else bool(value))
+                    if (type(getattr(self, variable, None)) is bool)
                     else value,
                 )
 
